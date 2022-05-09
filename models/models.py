@@ -27,6 +27,7 @@ class OccupancyEncoderCNN(nn.Module):
         for name in names[-6:]:
             setattr(self.fcn8, name, modified_last_layers[i])
             i += 1
+        self.fcn8 = self.fcn8.double()
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -56,6 +57,8 @@ class DetectionEncoderCNN(nn.Module):
         for name in names[-6:]:
             setattr(self.fcn8, name, modified_last_layers[i])
             i += 1
+
+        self.fcn8 = self.fcn8.double()
         self.sigmoid = nn.Sigmoid()
         
     def forward(self, x):

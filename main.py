@@ -36,7 +36,7 @@ dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) fo
 #     if i == 2:
 #         break
 
-model = OccupancyDetectionModel(occ_features, detect_feature_visits, 1)
+model = OccupancyDetectionModel(occ_features, detect_feature_visits, 1).double()
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 criterion = nn.BCEWithLogitsLoss()
 

@@ -3,6 +3,7 @@ import os.path as osp
 import numpy as np
 from torch.utils.data import Dataset
 import json
+import torch
 
 def process_raw_data(root, processed_dir, out_path):
     data_files_dict = {
@@ -56,7 +57,7 @@ class BirdSpeciesDataset(Dataset):
 
     def __getitem__(self, idx):
         sample = {'occupancy_feature': None, 'detection_feature': None, 'detection': None}
-        sample['occupancy_feature'] = np.load(self.processed_meta_data['occupancy_features'][idx])
-        sample['detection_feature'] = np.load(self.processed_meta_data['detection_features'][idx])
-        sample['detection'] = np.load(self.processed_meta_data['detection_label'][idx])
+        sample['occupancy_feature'] = torch.tensor(np.load(self.processed_meta_data['occupancy_features'][idx]), dtype=torch.double)
+        sample['detection_feature'] = torch.tensor(np.load(self.processed_meta_data['detection_features'][idx]), dtype=torch.double)
+        sample['detection'] = torch.tensor(np.load(self.processed_meta_data['detection_label'][idx]), dtype=torch.double)
         return sample
