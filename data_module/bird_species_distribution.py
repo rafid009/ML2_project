@@ -20,7 +20,7 @@ def process_raw_data(root, processed_dir, out_path):
     for d in data_files_dict['detection_features']:
         dfeat = np.load(d)
         detect_visits.append(dfeat)
-    detect_features = np.stack(detect_visits, axis=2)
+    detect_features = np.stack(detect_visits, axis=1)
 
     for i in range(len(occ_features)):
         np.save(f"{processed_dir}/occ-feat-{i}.npy", occ_features[i])

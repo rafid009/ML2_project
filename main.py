@@ -66,4 +66,7 @@ def evaluate(val_loader):
         loss = criterion(output, data['detection'])
         total_loss += loss.item()
         count += 1
+    model.train()
     return total_loss / count
+
+train(dataloaders['train'], dataloaders['val'], n_epoch)
