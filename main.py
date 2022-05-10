@@ -8,6 +8,7 @@ import torch.nn as nn
 from models.models import OccupancyDetectionModel
 from tqdm import tqdm
 import time
+import os
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -29,6 +30,7 @@ occ_features = 5
 detect_feature_visits = 5
 detect_features = 3
 n_epoch = 100
+model_path = '../saved_bird_models'
 dataset = BirdSpeciesDataset(data_root, tile_size)
 datasets = train_val_test_dataset(dataset)
 
@@ -62,6 +64,10 @@ def train(train_loader, val_loader, n_epoch):
                 val_loss = evaluate(val_loader)
                 tepoch.set_postfix(train_loss=loss.item(), val_loss=val_loss)
                 time.sleep(0.1)
+        if epoch % 5 == 0:
+            if not os.path.isdir(model_path):
+                os.makedirs(model_path)
+            torch.save(model.state_dict(), f"{model_path}/model-e{epoch}-l{val_loss}.pth")
                 
 def evaluate(val_loader):
     total_loss = 0
