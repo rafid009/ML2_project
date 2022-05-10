@@ -1,12 +1,15 @@
 from torch.utils.data import Subset
 from sklearn.model_selection import train_test_split
 from data_module.bird_species_distribution import BirdSpeciesDataset
+import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn as nn
 from models.models import OccupancyDetectionModel
 from tqdm import tqdm
 import time
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def train_val_test_dataset(dataset, val_split=0.20, test_split=0.20):
     train_idx, test_idx = train_test_split(list(range(len(dataset))), test_size=test_split, shuffle=True, random_state=10)
@@ -36,7 +39,8 @@ dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) fo
 #     if i == 2:
 #         break
 
-model = OccupancyDetectionModel(occ_features, detect_feature_visits, 1).double()
+model = OccupancyDetectionModel(occ_features, detect_feature_visits, 1).float()
+model = model.to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 criterion = nn.BCEWithLogitsLoss()
 
@@ -49,8 +53,10 @@ def train(train_loader, val_loader, n_epoch):
             tepoch.set_description(f"Epoch {epoch}")
             for idx, data in enumerate(train_loader):
                 optimizer.zero_grad()
-                output = model(data)
-                loss = criterion(output, data['detection'])
+                output = model(data.to(device))
+                output = torch.flatten(output, start_dim=1)
+                target = torch.flatten(data['detection'], start_dim=1)
+                loss = criterion(output, target)
                 loss.backward()
                 optimizer.step()
                 val_loss = evaluate(val_loader)
@@ -62,8 +68,10 @@ def evaluate(val_loader):
     count = 0
     model.eval()
     for idx, data in enumerate(val_loader):
-        output = model(data)
-        loss = criterion(output, data['detection'])
+        output = model(data.to(device))
+        output = torch.flatten(output, start_dim=1)
+        target = torch.flatten(data['detection'], start_dim=1)
+        loss = criterion(output, target)
         total_loss += loss.item()
         count += 1
     model.train()

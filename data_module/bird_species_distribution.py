@@ -57,7 +57,7 @@ class BirdSpeciesDataset(Dataset):
 
     def __getitem__(self, idx):
         sample = {'occupancy_feature': None, 'detection_feature': None, 'detection': None}
-        sample['occupancy_feature'] = torch.tensor(np.load(self.processed_meta_data['occupancy_features'][idx]), dtype=torch.double)
-        sample['detection_feature'] = torch.tensor(np.load(self.processed_meta_data['detection_features'][idx]), dtype=torch.double)
-        sample['detection'] = torch.tensor(np.load(self.processed_meta_data['detection_label'][idx]), dtype=torch.double)
+        sample['occupancy_feature'] = torch.tensor(np.load(self.processed_meta_data['occupancy_features'][idx]), dtype=torch.float32)
+        sample['detection_feature'] = torch.tensor(np.load(self.processed_meta_data['detection_features'][idx]), dtype=torch.float32)
+        sample['detection'] = torch.tensor(np.load(self.processed_meta_data['detection_label'][idx]), dtype=torch.float32)
         return sample
