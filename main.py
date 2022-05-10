@@ -29,7 +29,7 @@ batch_size = 32
 occ_features = 5
 detect_feature_visits = 5
 detect_features = 3
-n_epoch = 100
+n_epoch = 20
 model_path = '../saved_bird_models'
 dataset = BirdSpeciesDataset(data_root, tile_size)
 datasets = train_val_test_dataset(dataset)
@@ -58,7 +58,7 @@ def train(train_loader, val_loader, n_epoch):
     model.train()
     for epoch in range(1, n_epoch + 1):
         with tqdm(train_loader, unit="batch") as tepoch:
-            tepoch.set_description(f"Epoch {epoch}")
+            tepoch.set_description(f"Epoch {epoch}/{n_epoch}")
             for data in train_loader:
                 optimizer.zero_grad()
                 output = model(data)
