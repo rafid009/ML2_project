@@ -80,6 +80,6 @@ class OccupancyDetectionModel(nn.Module):
         detect = x['detection_feature'].to(device)
         occ = self.occ_features_encoder(occ)
         detect = self.detect_features_encoder(detect)
-        cat = torch.cat((occ, detect), dim=0)
+        cat = torch.cat((occ, detect), dim=1)
         out = self.conv2d(cat)
         return torch.squeeze(out)
