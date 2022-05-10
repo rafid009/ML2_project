@@ -53,7 +53,7 @@ def train(train_loader, val_loader, n_epoch):
     for epoch in range(1, n_epoch + 1):
         with tqdm(train_loader, unit="batch") as tepoch:
             tepoch.set_description(f"Epoch {epoch}")
-            for idx, data in enumerate(train_loader):
+            for data in train_loader:
                 optimizer.zero_grad()
                 output = model(data)
                 output = torch.flatten(output, start_dim=1)
@@ -64,7 +64,7 @@ def train(train_loader, val_loader, n_epoch):
                 optimizer.step()
                 val_loss = evaluate(val_loader)
                 tepoch.set_postfix(train_loss=loss.item(), val_loss=val_loss)
-                time.sleep(0.1)
+                tepoch.update(1)
         if epoch % 5 == 0:
             if not os.path.isdir(model_path):
                 os.makedirs(model_path)
