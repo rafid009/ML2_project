@@ -63,11 +63,11 @@ def train(train_loader, val_loader, n_epoch):
                 optimizer.zero_grad()
                 output = model(data)
 
-                output, target = mask_out_nan(output, target)
-
                 output = torch.flatten(output, start_dim=1)
                 target = torch.flatten(data['detection'].to(device), start_dim=1)
 
+                output, target = mask_out_nan(output, target)
+                
                 # print(f"out: {output}\ntarget: {target}")
                 loss = criterion(output, target)
                 loss.backward()
