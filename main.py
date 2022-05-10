@@ -9,6 +9,7 @@ from models.models import OccupancyDetectionModel
 from tqdm import tqdm
 import time
 import os
+import numpy as np
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -68,7 +69,6 @@ def train(train_loader, val_loader, n_epoch):
 
                 output, target = mask_out_nan(output, target)
 
-                # print(f"out: {output}\ntarget: {target}")
                 loss = criterion(output, target)
                 loss.backward()
                 optimizer.step()
@@ -78,7 +78,7 @@ def train(train_loader, val_loader, n_epoch):
         if epoch % 5 == 0:
             if not os.path.isdir(model_path):
                 os.makedirs(model_path)
-            torch.save(model.state_dict(), f"{model_path}/model-e{epoch}-l{val_loss}.pth")
+            torch.save(model.state_dict(), f"{model_path}/model-e{epoch}-l({np.round(val_loss, 5)}).pth")
                 
 def evaluate(val_loader):
     total_loss = 0
