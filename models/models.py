@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from torchfcn.models.fcn8s import FCN8s
 import torchvision.models as models
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 class OccupancyEncoderCNN(nn.Module):
     def __init__(self, in_channel, out_channel):
         super(OccupancyEncoderCNN, self).__init__()
@@ -74,8 +76,8 @@ class OccupancyDetectionModel(nn.Module):
         self.conv2d = nn.Conv2d(2 * out_channel, out_channel, 3)
         
     def forward(self, x):
-        occ = x['occupancy_feature']
-        detect = x['detection_feature']
+        occ = x['occupancy_feature'].to(device)
+        detect = x['detection_feature'].to(device)
         occ = self.occ_features_encoder(occ)
         detect = self.detect_features_encoder(detect)
         cat = torch.cat((occ, detect), dim=0)

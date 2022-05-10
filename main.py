@@ -53,9 +53,9 @@ def train(train_loader, val_loader, n_epoch):
             tepoch.set_description(f"Epoch {epoch}")
             for idx, data in enumerate(train_loader):
                 optimizer.zero_grad()
-                output = model(data.to(device))
+                output = model(data)
                 output = torch.flatten(output, start_dim=1)
-                target = torch.flatten(data['detection'], start_dim=1)
+                target = torch.flatten(data['detection'].to(device), start_dim=1)
                 loss = criterion(output, target)
                 loss.backward()
                 optimizer.step()
@@ -68,9 +68,9 @@ def evaluate(val_loader):
     count = 0
     model.eval()
     for idx, data in enumerate(val_loader):
-        output = model(data.to(device))
+        output = model(data)
         output = torch.flatten(output, start_dim=1)
-        target = torch.flatten(data['detection'], start_dim=1)
+        target = torch.flatten(data['detection'].to(device), start_dim=1)
         loss = criterion(output, target)
         total_loss += loss.item()
         count += 1
