@@ -23,7 +23,7 @@ def train_val_test_dataset(dataset, val_split=0.20, test_split=0.20):
     datasets.pop('train_val')
     return datasets
 
-tile_size = 64
+tile_size = 32
 data_root = '../bird_data'
 batch_size = 32
 occ_features = 5
@@ -67,7 +67,7 @@ def train(train_loader, val_loader, n_epoch):
                 target = torch.flatten(data['detection'].to(device), start_dim=1)
 
                 output, target = mask_out_nan(output, target)
-                
+
                 # print(f"out: {output}\ntarget: {target}")
                 loss = criterion(output, target)
                 loss.backward()
@@ -88,6 +88,7 @@ def evaluate(val_loader):
         output = model(data)
         output = torch.flatten(output, start_dim=1)
         target = torch.flatten(data['detection'].to(device), start_dim=1)
+        output, target = mask_out_nan(output, target)
         loss = criterion(output, target)
         total_loss += loss.item()
         count += 1
