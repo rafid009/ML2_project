@@ -44,8 +44,14 @@ dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) fo
 model = OccupancyDetectionModel(occ_features, detect_feature_visits, 1).float()
 model = model.to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
-criterion = nn.BCEWithLogitsLoss()
+criterion = nn.BCEWithLogitsLoss(reduction='mean')
 
+
+def mask_out_nan(output, target):
+    mask = ~torch.isnan(target)
+    target = torch.nan_to_num(target)
+    output = output * mask
+    return output, target
 
 def train(train_loader, val_loader, n_epoch):
     
@@ -56,9 +62,13 @@ def train(train_loader, val_loader, n_epoch):
             for data in train_loader:
                 optimizer.zero_grad()
                 output = model(data)
+
+                output, target = mask_out_nan(output, target)
+
                 output = torch.flatten(output, start_dim=1)
                 target = torch.flatten(data['detection'].to(device), start_dim=1)
-                print(f"out: {output}\ntarget: {target}")
+
+                # print(f"out: {output}\ntarget: {target}")
                 loss = criterion(output, target)
                 loss.backward()
                 optimizer.step()
