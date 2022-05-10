@@ -73,7 +73,7 @@ class OccupancyDetectionModel(nn.Module):
         super(OccupancyDetectionModel, self).__init__()
         self.occ_features_encoder = OccupancyEncoderCNN(occ_in_channel, out_channel)
         self.detect_features_encoder = DetectionEncoderCNN(detect_in_channel, out_channel)
-        self.conv2d = nn.Conv2d(2 * out_channel, out_channel, 3)
+        self.conv2d = nn.Conv2d(2 * out_channel, out_channel, 3, padding='same')
         
     def forward(self, x):
         occ = x['occupancy_feature'].to(device)
