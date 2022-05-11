@@ -73,13 +73,13 @@ class OccupancyDetectionModel(nn.Module):
         super(OccupancyDetectionModel, self).__init__()
         self.occ_features_encoder = OccupancyEncoderCNN(occ_in_channel, out_channel)
         self.detect_features_encoder = DetectionEncoderCNN(detect_in_channel, out_channel)
-        self.conv2d = nn.Conv2d(2 * out_channel, out_channel, 3, padding='same')
+        self.conv2d = nn.Conv2d(out_channel, out_channel, 3, padding='same')
         
     def forward(self, x):
         occ = x['occupancy_feature'].to(device)
         detect = x['detection_feature'].to(device)
         occ = self.occ_features_encoder(occ)
         detect = self.detect_features_encoder(detect)
-        cat = torch.cat((occ, detect), dim=1)
+        cat = detect * occ #torch.cat((occ, detect), dim=1)
         out = self.conv2d(cat)
         return torch.squeeze(out)
