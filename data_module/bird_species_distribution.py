@@ -17,7 +17,8 @@ def process_raw_data(root, processed_dir, out_path):
     occ_features = np.load(data_files_dict['occupancy_features'])
     detect_visits = []
     label = np.load(data_files_dict['detection_label'])
-
+    print(f'label: {label.shape}')
+    
     for d in data_files_dict['detection_features']:
         dfeat = np.load(d)
         detect_visits.append(dfeat)
@@ -37,12 +38,13 @@ def process_raw_data(root, processed_dir, out_path):
 
 
 class BirdSpeciesDataset(Dataset):
-    def __init__(self, data_root, tile_size): 
+    def __init__(self, data_root, tile_size, n_visits=5): 
         self.tile_size = tile_size
         self.data_root = f"{data_root}/T{tile_size}"
         self.processed_meta_data = None
         self.processed_meta_path = f"{self.data_root}/processed_meta.json"
         self.processed_dir = f"{self.data_root}/processed/"
+        self.n_visits = n_visits
 
         if not osp.exists(self.processed_meta_path):
             if not osp.isdir(self.processed_dir):
@@ -56,8 +58,11 @@ class BirdSpeciesDataset(Dataset):
         return len(self.processed_meta_data['detection_label'])
 
     def __getitem__(self, idx):
-        sample = {'occupancy_feature': None, 'detection_feature': None, 'detection': None}
+        sample = {}
         sample['occupancy_feature'] = torch.tensor(np.load(self.processed_meta_data['occupancy_features'][idx]), dtype=torch.float32)
-        sample['detection_feature'] = torch.tensor(np.load(self.processed_meta_data['detection_features'][idx]), dtype=torch.float32)
-        sample['detection'] = torch.tensor(np.load(self.processed_meta_data['detection_label'][idx]), dtype=torch.float32)
+        d_feats = torch.tensor(np.load(self.processed_meta_data['detection_features'][idx]), dtype=torch.float32)
+        detections = torch.tensor(np.load(self.processed_meta_data['detection_label'][idx]), dtype=torch.float32)  
+        for v in range(self.n_visits):
+            sample[f'detection_feature_{v}'] = d_feats[v]
+            sample[f'detection_{v}'] = detections[v]
         return sample

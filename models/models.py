@@ -39,7 +39,7 @@ class DetectionEncoderCNN(nn.Module):
 
     def __init__(self, in_channel, out_channel):
         super(DetectionEncoderCNN, self).__init__()
-        self.conv3d = nn.Conv3d(in_channel, 1, 3, padding='same')
+        # self.conv3d = nn.Conv3d(in_channel, 1, 3, padding='same')
         self.fcn8 = FCN8s()
         state_dict = torch.load(FCN8s.download())
 
@@ -64,9 +64,7 @@ class DetectionEncoderCNN(nn.Module):
         self.sigmoid = nn.Sigmoid()
         
     def forward(self, x):
-        o = self.conv3d(x)
-        o = torch.squeeze(o)
-        return self.sigmoid(self.fcn8(o))
+        return self.sigmoid(self.fcn8(x))
 
 class OccupancyDetectionModel(nn.Module):
     def __init__(self, occ_in_channel, detect_in_channel, out_channel):
@@ -75,9 +73,9 @@ class OccupancyDetectionModel(nn.Module):
         self.detect_features_encoder = DetectionEncoderCNN(detect_in_channel, out_channel)
         self.conv2d = nn.Conv2d(out_channel, out_channel, 3, padding='same')
         
-    def forward(self, x):
+    def forward(self, x, visit):
         occ = x['occupancy_feature'].to(device)
-        detect = x['detection_feature'].to(device)
+        detect = x[f'detection_feature_{visit}'].to(device)
         occ = self.occ_features_encoder(occ)
         detect = self.detect_features_encoder(detect)
         cat = detect * occ #torch.cat((occ, detect), dim=1)

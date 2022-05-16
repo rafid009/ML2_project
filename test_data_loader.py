@@ -9,7 +9,10 @@ data = BirdSpeciesDataset(data_root, tile_size)
 dataloader = DataLoader(data, batch_size=10, shuffle=True)
 
 for i, sample in enumerate(dataloader):
-    print(f"{i}, {sample['occupancy_feature'].shape}\n{sample['detection_feature'].shape}\n{sample['detection'].shape}")
+    # print(f"{i}, {sample['occupancy_feature'].shape}\n{sample['detection_feature'].shape}\n{sample['detection'].shape}")
+    print(f'{i}:')
+    for key in sample.keys():
+        print(f"\t{key} = {sample[key].shape}")
     if i == 2:
         break
 

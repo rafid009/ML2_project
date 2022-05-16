@@ -13,6 +13,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.metrics import auc
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -56,7 +57,7 @@ def mask_out_nan(output, target):
     output = output * mask
     return output, target
 
-def train(train_loader, val_loader, n_epoch, eval_path):
+def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
     result_dict = {'train': [], 'val': []}
     model.train()
     for epoch in range(1, n_epoch + 1):
@@ -65,17 +66,18 @@ def train(train_loader, val_loader, n_epoch, eval_path):
             total_train = 0
             total_val = 0
             count = 0
+            avg_visit_loss = 0
             for data in train_loader:
                 optimizer.zero_grad()
-                output = model(data)
-                output = torch.flatten(output, start_dim=1)
-                target = torch.flatten(data['detection'].to(device), start_dim=1)
-
-                output, target = mask_out_nan(output, target)
-
-                loss = criterion(output, target)
-                
-                loss.backward()
+                for v in range(n_visits):
+                    output = model(data, v)
+                    output = torch.flatten(output, start_dim=1)
+                    target = torch.flatten(data[f'detection_{v}'].to(device), start_dim=1)
+                    output, target = mask_out_nan(output, target)
+                    loss = criterion(output, target)
+                    avg_visit_loss += loss
+                avg_visit_loss = avg_visit_loss / n_visits
+                avg_visit_loss.backward()
                 optimizer.step()
                 val_loss = evaluate(val_loader)
                 
@@ -93,17 +95,22 @@ def train(train_loader, val_loader, n_epoch, eval_path):
     df = pd.DataFrame(result_dict)
     df.to_csv(eval_path, index=False)
                 
-def evaluate(val_loader):
+def evaluate(val_loader, n_visits=5):
     total_loss = 0
     count = 0
     model.eval()
     for idx, data in enumerate(val_loader):
-        output = model(data)
-        output = torch.flatten(output, start_dim=1)
-        target = torch.flatten(data['detection'].to(device), start_dim=1)
-        output, target = mask_out_nan(output, target)
-        loss = criterion(output, target)
-        total_loss += loss.item()
+        avg_loss = 0
+        avg_auc = 0
+        for v in range(n_visits):
+            output = model(data, v)
+            output = torch.flatten(output, start_dim=1)
+            target = torch.flatten(data[f'detection_{v}'].to(device), start_dim=1)
+            output, target = mask_out_nan(output, target)
+            loss = criterion(output, target)
+            # avg_auc += auc()
+            avg_loss += loss.item()
+        total_loss += (avg_loss / n_visits)
         count += 1
     model.train()
     return total_loss / count
@@ -114,9 +121,11 @@ def plot_loss(n_epochs, train_losses, val_losses, lr):
     plt.title(f"Training vs validation cross entropy loss for lr={lr}", fontsize=20)
     plt.plot(epochs, train_losses, color='tab:red', label='Validation loss')
     plt.plot(epochs, val_losses, color='tab:orange', label='Training loss')
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
     plt.xlabel('Number of epochs', fontsize=16)
-    plt.ylabel('Cross entropy loss')
-    plt.legend()
+    plt.ylabel('Cross entropy loss', fontsize=16)
+    plt.legend(fontsize=16)
     plt.savefig(f"train-vs-val-plot-lr({lr}).png", dpi=300)
     plt.close()
 
