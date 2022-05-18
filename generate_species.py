@@ -1,8 +1,6 @@
 import numpy as np
 from osgeo import gdal
-import pandas as pd
-import random
-
+import gc
 
 def split_tiles(arr, tile_size):
     r_dim = 0
@@ -271,7 +269,7 @@ print("Reached detection layer")
 
 # Write detection layer to tif. file
 
-detection_layer = np.zeros(shape=(total_rows, total_cols))
+detection_layer = np.zeros(shape=(total_visits, total_rows, total_cols), dtype=np.float16)
 
 # Arbitrary weights, intercept is varied
 thetas_det = [	
@@ -284,7 +282,6 @@ thetas_det = [
 for row in range(total_rows):
     for col in range(total_cols):
         
-        visit_history = []
         for visit in range(total_visits):
     
             z = thetas_det[0] # intercept
@@ -292,23 +289,34 @@ for row in range(total_rows):
                z += (thetas_det[feat+1] * detection_feature_tensors[visit][feat, row, col])
             
             det_prob = 1/(1 + np.exp(-z)) # sigmoid
-            visit_history.append(int(det_prob> 0.5) * true_occupancy[row,col])
 
-        detection_layer[row, col] = sum(visit_history)/total_visits
+            detection_layer[visit, row, col] = int(det_prob> 0.5) * true_occupancy[row,col]
+
+for visit in range(total_visits):
+    for idx in nan_indices:
+        detection_layer[visit, idx[0],idx[1]] = np.nan
 
 
-for idx in nan_indices:
-    detection_layer[idx[0],idx[1]] = np.nan
+
+
+del imarray, imarray_n, true_occupancy, true_occupancy_prob, detection_feature_tensors
+gc.collect()
+
 
 driver = gdal.GetDriverByName("GTiff")
-outDs = driver.Create("detection.tif", total_cols, total_rows, 1, gdal.GDT_Float32)
+outDs = driver.Create("detection.tif", total_cols, total_rows, total_visits, gdal.GDT_Int16)
 
 # georeferencing parameters 
 outDs.SetProjection(raster.GetProjection())
 outDs.SetGeoTransform(raster.GetGeoTransform())
 
-outBand = outDs.GetRasterBand(1)
-outBand.WriteArray(detection_layer)
+
+for i in range(total_visits):
+    outBand = outDs.GetRasterBand(i + 1)
+    outBand.WriteArray(detection_layer[i])
+
+#outBand = outDs.GetRasterBand(1)
+#outBand.WriteArray(detection_layer)
 
 # Close raster file
 outDs = None
@@ -320,6 +328,7 @@ np.save('./npy_files/T64/detection_64.npy', split_tiles(detection_layer, (64, 64
 np.save('./npy_files/T128/detection_128.npy', split_tiles(detection_layer, (128, 128))) # 128 x 128 tiles
 
 
+print("Reached detection layer 80")
 # Introduce sparsity
 
 np.random.shuffle(nonnan_indices)
@@ -333,20 +342,26 @@ removal_site_no = int(0.8 * (nonnan_indices.shape[0]))
 removal_indices = nonnan_indices[:removal_site_no]
 
 detection_layer_80 = detection_layer.copy()
+detection_layer_60 = detection_layer.copy()
 
+del detection_layer
+gc.collect()
 
-for idx in removal_indices:
-    detection_layer_80[idx[0],idx[1]] = np.nan
+for visit in range(total_visits):
+    for idx in removal_indices:
+        detection_layer_80[visit, idx[0],idx[1]] = np.nan
 
 driver = gdal.GetDriverByName("GTiff")
-outDs = driver.Create("detection_80.tif", total_cols, total_rows, 1, gdal.GDT_Float32)
+outDs = driver.Create("detection_80.tif", total_cols, total_rows, total_visits, gdal.GDT_Int16)
 
 # georeferencing parameters 
 outDs.SetProjection(raster.GetProjection())
 outDs.SetGeoTransform(raster.GetGeoTransform())
 
-outBand = outDs.GetRasterBand(1)
-outBand.WriteArray(detection_layer_80)
+for i in range(total_visits):
+    outBand = outDs.GetRasterBand(i + 1)
+    outBand.WriteArray(detection_layer_80[i])
+
 
 # Close raster file
 outDs = None
@@ -357,6 +372,11 @@ del outDs, outBand
 np.save('./npy_files/T64/detection_80_64.npy', split_tiles(detection_layer_80, (64, 64))) # 64 x 64 tiles
 np.save('./npy_files/T128/detection_80_128.npy', split_tiles(detection_layer_80, (128, 128))) # 128 x 128 tiles
 
+
+del detection_layer_80
+gc.collect()
+
+
 # 60 $ Sparsity - 40% sites labeled
 
 sparsity = 0.6
@@ -364,22 +384,27 @@ sparsity = 0.6
 removal_site_no = int(0.6 * (nonnan_indices.shape[0]))
 removal_indices = nonnan_indices[:removal_site_no]
 
-detection_layer_60 = detection_layer.copy()
 
 
-for idx in removal_indices:
-    detection_layer_60[idx[0],idx[1]] = np.nan
+
+for visit in range(total_visits):
+    for idx in removal_indices:
+        detection_layer_60[visit, idx[0],idx[1]] = np.nan
 
 
 driver = gdal.GetDriverByName("GTiff")
-outDs = driver.Create("detection_60.tif", total_cols, total_rows, 1, gdal.GDT_Float32)
+outDs = driver.Create("detection_60.tif", total_cols, total_rows, total_visits, gdal.GDT_Int16)
 
 # georeferencing parameters 
 outDs.SetProjection(raster.GetProjection())
 outDs.SetGeoTransform(raster.GetGeoTransform())
 
-outBand = outDs.GetRasterBand(1)
-outBand.WriteArray(detection_layer_60)
+
+ 
+for i in range(total_visits):
+    outBand = outDs.GetRasterBand(i + 1)
+    outBand.WriteArray(detection_layer_60[i])
+
 
 # Close raster file
 outDs = None
