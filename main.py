@@ -117,7 +117,7 @@ def evaluate(val_loader, n_visits=5):
 
 def plot_loss(n_epochs, train_losses, val_losses, lr):
     epochs = [e for e in range(1, n_epochs + 1)]
-    plt.figure()
+    plt.figure(figsize=(16,9))
     plt.title(f"Training vs validation cross entropy loss for lr={lr}", fontsize=20)
     plt.plot(epochs, train_losses, color='tab:red', label='Validation loss')
     plt.plot(epochs, val_losses, color='tab:orange', label='Training loss')
@@ -126,7 +126,7 @@ def plot_loss(n_epochs, train_losses, val_losses, lr):
     plt.xlabel('Number of epochs', fontsize=16)
     plt.ylabel('Cross entropy loss', fontsize=16)
     plt.legend(fontsize=16)
-    plt.savefig(f"train-vs-val-plot-lr({lr}).png", dpi=300)
+    plt.savefig(f"plots/train-vs-val-plot-lr({lr}).png", dpi=300)
     plt.close()
 
 lrs = [0.01, 0.001, 0.005, 0.0009]
