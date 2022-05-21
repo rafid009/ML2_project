@@ -10,7 +10,7 @@ import pandas as pd
 import os
 
 
-root = 'data/T64'
+root = '../bird_data/T64' #changed
 data_dict = {
     'occu[ancy_features': f'{root}/occupancy_features_64.npy',
     'detection_features': [f'{root}/detection_features_v1_64.npy', f'{root}/detection_features_v2_64.npy', 
