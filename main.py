@@ -57,6 +57,12 @@ def mask_out_nan(output, target):
     output = output * mask
     return output, target
 
+def get_visit_likelihood(d, y):
+    mask = ~torch.isnan(y)
+    y_t = torch.nan_to_num(y)
+    l = torch.pow(d, y_t) * torch.pow((1 - d), (1 - y_t))
+    return l, mask
+
 def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
     result_dict = {'train': [], 'val': []}
     model.train()
@@ -69,13 +75,17 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
             avg_visit_loss = 0
             for data in train_loader:
                 optimizer.zero_grad()
+
                 for v in range(n_visits):
-                    output = model(data, v)
-                    output = torch.flatten(output, start_dim=1)
-                    target = torch.flatten(data[f'detection_{v}'].to(device), start_dim=1)
-                    output, target = mask_out_nan(output, target)
-                    loss = criterion(output, target)
-                    avg_visit_loss += loss
+                    output, occ, detect = model(data, v)
+                    target = data[f'detection_{v}'].to(device)
+                    bernouli_l = get_visit_likelihood(detect, target)
+                    print(f"out: {output.shape}, occ: {occ.shape}\ny: {target.shape}, d: {detect.shape}\nbernouli: {bernouli_l.shape}")
+                    # output = torch.flatten(output, start_dim=1)
+                    
+                    # output, target = mask_out_nan(output, target)
+                    # loss = criterion(output, target)
+                    # avg_visit_loss += loss
                 avg_visit_loss = avg_visit_loss / n_visits
                 avg_visit_loss.backward()
                 optimizer.step()
