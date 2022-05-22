@@ -42,6 +42,8 @@ def process_raw_data(root, processed_dir, out_path):
         json.dump(processed_data_dict, out)
     return processed_data_dict
 
+def save_k_neighbors(occ_f):
+    return
 
 class BirdSpeciesDataset(Dataset):
     def __init__(self, data_root, tile_size, n_visits=5): 
