@@ -30,9 +30,8 @@ def train_val_test_dataset(dataset, val_split=0.20, test_split=0.20):
 
 tile_size = 64
 data_root = '../bird_data'
-batch_size = 32
+batch_size = 2
 occ_features = 5
-detect_feature_visits = 5
 detect_features = 3
 n_epoch = 30
 model_path = '../saved_bird_models'
@@ -46,9 +45,9 @@ dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) fo
 #     if i == 2:
 #         break
 
-model = OccupancyDetectionModel(occ_features, detect_feature_visits, 1).float()
+model = OccupancyDetectionModel(occ_features, detect_features, 1).float()
 model = model.to(device)
-criterion = nn.BCEWithLogitsLoss(reduction='mean')
+# criterion = nn.BCEWithLogitsLoss(reduction='mean')
 
 
 def mask_out_nan(output, target):
@@ -61,7 +60,11 @@ def get_visit_likelihood(d, y):
     mask = ~torch.isnan(y)
     y_t = torch.nan_to_num(y)
     l = torch.pow(d, y_t) * torch.pow((1 - d), (1 - y_t))
-    return l, mask
+    return l * mask, y_t
+
+def get_avg_visit_loss(occ, likelihood, K_y):
+    loss = torch.sum(torch.sum(occ * likelihood + (1 - occ) * K_y, dim=1), dim=1)
+    return loss.mean()
 
 def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
     result_dict = {'train': [], 'val': []}
@@ -75,19 +78,20 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
             avg_visit_loss = 0
             for data in train_loader:
                 optimizer.zero_grad()
-
+                likelihood_loss = torch.ones((batch_size, tile_size, tile_size))
+                occ = None
+                K_y = torch.zeros((batch_size, tile_size, tile_size))
                 for v in range(n_visits):
                     output, occ, detect = model(data, v)
+                    occ = torch.squeeze(occ)
+                    detect = torch.squeeze(detect)
                     target = data[f'detection_{v}'].to(device)
-                    bernouli_l = get_visit_likelihood(detect, target)
-                    print(f"out: {output.shape}, occ: {occ.shape}\ny: {target.shape}, d: {detect.shape}\nbernouli: {bernouli_l.shape}")
-                    # output = torch.flatten(output, start_dim=1)
-                    
-                    # output, target = mask_out_nan(output, target)
-                    # loss = criterion(output, target)
-                    # avg_visit_loss += loss
-                avg_visit_loss = avg_visit_loss / n_visits
-                avg_visit_loss.backward()
+                    bernouli_l, masked_y = get_visit_likelihood(detect, target)
+                    likelihood_loss *= bernouli_l
+                    K_y = torch.max(K_y, masked_y)
+                loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
+                loss = loss / n_visits
+                loss.backward()
                 optimizer.step()
                 val_loss = evaluate(val_loader)
                 
@@ -112,18 +116,22 @@ def evaluate(val_loader, n_visits=5):
     for idx, data in enumerate(val_loader):
         avg_loss = 0
         avg_auc = 0
+        likelihood_loss = torch.ones((batch_size, tile_size, tile_size))
+        occ = None
+        K_y = torch.zeros((batch_size, tile_size, tile_size))
         for v in range(n_visits):
-            output = model(data, v)
-            output = torch.flatten(output, start_dim=1)
-            target = torch.flatten(data[f'detection_{v}'].to(device), start_dim=1)
-            output, target = mask_out_nan(output, target)
-            loss = criterion(output, target)
-            # avg_auc += auc()
-            avg_loss += loss.item()
-        total_loss += (avg_loss / n_visits)
+            output, occ, detect = model(data, v)
+            occ = torch.squeeze(occ)
+            detect = torch.squeeze(detect)
+            target = data[f'detection_{v}'].to(device)
+            bernouli_l, masked_y = get_visit_likelihood(detect, target)
+            likelihood_loss *= bernouli_l
+            K_y = torch.max(K_y, masked_y)
+        loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
+        total_loss += (loss / n_visits)
         count += 1
     model.train()
-    return total_loss / count
+    return total_loss.item() / count
 
 def plot_loss(n_epochs, train_losses, val_losses, lr):
     epochs = [e for e in range(1, n_epochs + 1)]

@@ -25,6 +25,12 @@ def process_raw_data(root, processed_dir, out_path):
     detect_features = np.stack(detect_visits, axis=1)
 
     for i in range(len(occ_features)):
+        if np.sum(~np.isnan(occ_features[i])) == 0 or np.sum(~np.isnan(detect_features[i])) == 0:
+            continue
+        if np.sum(np.isnan(occ_features[i])) > 0:
+            occ_features[i] = np.nan_to_num(occ_features[i])
+        if np.sum(np.isnan(detect_features[i])) > 0:
+            detect_features[i] = np.nan_to_num(detect_features[i])
         np.save(f"{processed_dir}/occ-feat-{i}.npy", occ_features[i])
         np.save(f"{processed_dir}/detect-label-{i}.npy", label[i])
         np.save(f"{processed_dir}/detect-fetures-{i}.npy", detect_features[i])
