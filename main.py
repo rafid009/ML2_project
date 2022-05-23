@@ -57,10 +57,11 @@ def mask_out_nan(output, target):
     return output, target
 
 def get_visit_likelihood(d, y):
-    mask = ~torch.isnan(y)
-    y_t = torch.nan_to_num(y)
+    mask = ~torch.isnan(y).to(device)
+    y_t = torch.nan_to_num(y).to(device)
     print(f"d: {d.shape} y_t: {y_t.shape} y: {y.shape}")
     l = torch.pow(d, y_t) * torch.pow((1 - d), (1 - y_t))
+    l = l.to(device)
     return l * mask, y_t
 
 def get_avg_visit_loss(occ, likelihood, K_y):
