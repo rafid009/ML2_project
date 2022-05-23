@@ -84,9 +84,11 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
             for data in train_loader:
                 
                 optimizer.zero_grad()
-                likelihood_loss = torch.ones((batch_size, tile_size, tile_size)).to(device)
+                
+                b_size = min(batch_size, len(data[f'detection_{v}']))
+                likelihood_loss = torch.ones((b_size, tile_size, tile_size)).to(device)
                 occ = None
-                K_y = torch.zeros((batch_size, tile_size, tile_size)).to(device)
+                K_y = torch.zeros((b_size, tile_size, tile_size)).to(device)
                 for v in range(n_visits):
                     # print(f"d_target: {data[f'detection_{v}'].shape}")
                     output, occ, detect = model(data, v)
@@ -131,9 +133,10 @@ def evaluate(val_loader, n_visits=5):
     for idx, data in enumerate(val_loader):
         avg_loss = 0
         avg_auc = 0
-        likelihood_loss = torch.ones((batch_size, tile_size, tile_size)).to(device)
+        b_size = min(batch_size, len(data[f'detection_{v}']))
+        likelihood_loss = torch.ones((b_size, tile_size, tile_size)).to(device)
         occ = None
-        K_y = torch.zeros((batch_size, tile_size, tile_size)).to(device)
+        K_y = torch.zeros((b_size, tile_size, tile_size)).to(device)
         for v in range(n_visits):
             output, occ, detect = model(data, v)
             occ = torch.squeeze(occ)
