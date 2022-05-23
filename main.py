@@ -102,10 +102,10 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                 loss.backward()
                 optimizer.step()
                 val_loss, auc_i = evaluate(val_loader)
-                if epoch not in auc_dict.keys():
-                    auc_dict[epoch] = [auc_i]
-                else:
-                    auc_dict[epoch].append(auc_i)
+                # if epoch not in auc_dict.keys():
+                #     auc_dict[epoch] = [auc_i]
+                # else:
+                #     auc_dict[epoch].append(auc_i)
                 tepoch.set_postfix(train_loss=loss.item(), val_loss=val_loss)
                 total_train += loss.item()
                 total_val += val_loss
@@ -120,8 +120,8 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
     df = pd.DataFrame(result_dict)
     df.to_csv(eval_path, index=False)
     # df_auc = json.dumps(auc_dict, indent = 4)
-    with open('auc.json', 'w') as f:
-        json.dump(auc_dict, f, indent=4)
+    # with open('auc.json', 'w') as f:
+    #     json.dump(auc_dict, f, indent=4)
                 
 def evaluate(val_loader, n_visits=5):
     total_loss = 0
@@ -141,13 +141,13 @@ def evaluate(val_loader, n_visits=5):
             target = data[f'detection_{v}'].to(device)
             bernouli_l, masked_y = get_visit_likelihood(detect, target)
             likelihood_loss *= bernouli_l
-            output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
-            target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
-            auc_v = roc_auc_score(target, output)
-            avg_auc += auc_v
+            # output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
+            # target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
+            # auc_v = roc_auc_score(target, output)
+            # avg_auc += auc_v
             K_y = torch.max(K_y, masked_y)
-        avg_auc = avg_auc/n_visits
-        auc_dict[idx] = avg_auc
+        # avg_auc = avg_auc/n_visits
+        # auc_dict[idx] = avg_auc
         loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
         total_loss += (loss / n_visits)
         count += 1
