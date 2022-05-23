@@ -96,13 +96,9 @@ class OccupancyDetectionModel(nn.Module):
         
     def forward(self, x, visit):
         occ = x['occupancy_feature'].to(device)
-        # print(f"occ feats: {occ}")
         detect = x[f'detection_feature_{visit}'].to(device)
-        # print(f"detect feats: {detect}")
         occ = self.occ_features_encoder(occ)
-        # print(f"in model occ: {occ}\n")
         detect = self.detect_features_encoder(detect)
-        # print(f"in model detect: {detect}")
-        cat = detect * occ #torch.cat((occ, detect), dim=1)
+        cat = detect * occ
         out = self.sigmoid(self.conv2d(cat))
         return torch.squeeze(out), occ, detect
