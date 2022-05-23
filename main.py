@@ -80,7 +80,7 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
             for data in train_loader:
                 
                 optimizer.zero_grad()
-                likelihood_loss = torch.ones((batch_size, tile_size, tile_size))
+                likelihood_loss = torch.ones((batch_size, tile_size, tile_size)).to(device)
                 occ = None
                 K_y = torch.zeros((batch_size, tile_size, tile_size))
                 for v in range(n_visits):
