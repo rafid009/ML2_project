@@ -141,8 +141,8 @@ def evaluate(val_loader, n_visits=5):
             target = data[f'detection_{v}'].to(device)
             bernouli_l, masked_y = get_visit_likelihood(detect, target)
             likelihood_loss *= bernouli_l
-            output = torch.flatten(output, start_dim=1)
-            target = torch.flatten(target, start_dim=1)
+            output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
+            target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
             auc_v = roc_auc_score(target, output)
             avg_auc += auc_v
             K_y = torch.max(K_y, masked_y)
@@ -154,7 +154,7 @@ def evaluate(val_loader, n_visits=5):
     model.train()
     return total_loss.item() / count, auc_dict
 
-def plot_loss(n_epochs, train_losses, val_losses, lr):
+def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
     epochs = [e for e in range(1, n_epochs + 1)]
     plt.figure(figsize=(16,9))
     plt.title(f"Training vs validation cross entropy loss for lr={lr}", fontsize=20)
@@ -165,11 +165,11 @@ def plot_loss(n_epochs, train_losses, val_losses, lr):
     plt.xlabel('Number of epochs', fontsize=16)
     plt.ylabel('Cross entropy loss', fontsize=16)
     plt.legend(fontsize=16)
-    plt.savefig(f"plots/train-vs-val-plot-lr({lr}).png", dpi=300)
+    plt.savefig(f"{plots_folder}/train-vs-val-plot-lr({lr}).png", dpi=300)
     plt.close()
 
 lrs = [0.01, 0.001, 0.005, 0.0009]
-plots_folder = '../plots_bird'
+plots_folder = './plots_bird'
 if not os.path.isdir(plots_folder):
     os.makedirs(plots_folder)
 for lr in lrs:
@@ -185,5 +185,5 @@ for lr in lrs:
         #     break
     train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file)
     df = pd.read_csv(plot_file)
-    plot_loss(n_epoch, df['train'], df['val'], lr)
+    plot_loss(n_epoch, df['train'], df['val'], lr, plots_folder)
 
