@@ -140,7 +140,8 @@ def evaluate(val_loader, n_visits=5):
             detect = torch.squeeze(detect)
             target = data[f'detection_{v}'].to(device)
             bernouli_l, masked_y = get_visit_likelihood(detect, target)
-            likelihood_loss *= bernouli_l
+            print(f"det: {detect.shape}, targ: {target.shape}, bernou: {bernouli_l.shape}, likeli: {likelihood_loss.shape}")
+            likelihood_loss = likelihood_loss * bernouli_l
             # output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
             # target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
             # auc_v = roc_auc_score(target, output)
