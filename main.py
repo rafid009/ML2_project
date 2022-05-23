@@ -158,6 +158,14 @@ if not os.path.isdir(plots_folder):
 for lr in lrs:
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     plot_file = f"{plots_folder}/train-vs-valid-{lr}.csv"
+    for i, sample in enumerate(dataloaders['train']):
+        # print(f"{i}, {sample['occupancy_feature'].shape}\n{sample['detection_feature'].shape}\n{sample['detection'].shape}")
+        print(f'{i}:')
+        print(f"{sample[f'detection_{0}'].shape}")
+        for key in sample.keys():
+            print(f"\t{key} = {sample[key].shape}")
+        if i == 1:
+            break
     train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file)
     df = pd.read_csv(plot_file)
     plot_loss(n_epoch, df['train'], df['val'], lr)
