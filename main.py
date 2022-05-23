@@ -60,7 +60,7 @@ def mask_out_nan(output, target):
 def get_visit_likelihood(d, y):
     mask = ~torch.isnan(y).to(device)
     y_t = torch.nan_to_num(y).to(device)
-    print(f"d: {d.shape} y_t: {y_t.shape} y: {y.shape}")
+    # print(f"d: {d.shape} y_t: {y_t.shape} y: {y.shape}")
     l = torch.pow(d, y_t) * torch.pow((1 - d), (1 - y_t))
     l = l.to(device)
     return l * mask, y_t
@@ -88,7 +88,7 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                 occ = None
                 K_y = torch.zeros((batch_size, tile_size, tile_size)).to(device)
                 for v in range(n_visits):
-                    print(f"d_target: {data[f'detection_{v}'].shape}")
+                    # print(f"d_target: {data[f'detection_{v}'].shape}")
                     output, occ, detect = model(data, v)
                     occ = torch.squeeze(occ)
                     detect = torch.squeeze(detect)
