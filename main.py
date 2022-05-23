@@ -133,7 +133,7 @@ def evaluate(val_loader, n_visits=5):
     for idx, data in enumerate(val_loader):
         avg_loss = 0
         avg_auc = 0
-        b_size = min(batch_size, len(data[f'detection_{v}']))
+        b_size = min(batch_size, len(data['occupancy_feature']))
         likelihood_loss = torch.ones((b_size, tile_size, tile_size)).to(device)
         occ = None
         K_y = torch.zeros((b_size, tile_size, tile_size)).to(device)
@@ -141,7 +141,7 @@ def evaluate(val_loader, n_visits=5):
             output, occ, detect = model(data, v)
             occ = torch.squeeze(occ)
             detect = torch.squeeze(detect)
-            target = data[f'detection_{v}'].to(device)
+            target = data[f'detect'].to(device)
             bernouli_l, masked_y = get_visit_likelihood(detect, target)
             print(f"det: {detect.shape}, targ: {target.shape}, bernou: {bernouli_l.shape}, likeli: {likelihood_loss.shape}")
             likelihood_loss = likelihood_loss * bernouli_l
