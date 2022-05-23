@@ -85,7 +85,7 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                 
                 optimizer.zero_grad()
                 
-                b_size = min(batch_size, len(data[f'detection_{v}']))
+                b_size = min(batch_size, len(data['occupancy_feature']))
                 likelihood_loss = torch.ones((b_size, tile_size, tile_size)).to(device)
                 occ = None
                 K_y = torch.zeros((b_size, tile_size, tile_size)).to(device)
