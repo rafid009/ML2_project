@@ -141,7 +141,7 @@ def evaluate(val_loader, n_visits=5):
             output, occ, detect = model(data, v)
             occ = torch.squeeze(occ)
             detect = torch.squeeze(detect)
-            target = data[f'detect'].to(device)
+            target = data[f'detection_{v}'].to(device)
             bernouli_l, masked_y = get_visit_likelihood(detect, target)
             print(f"det: {detect.shape}, targ: {target.shape}, bernou: {bernouli_l.shape}, likeli: {likelihood_loss.shape}")
             likelihood_loss = likelihood_loss * bernouli_l
