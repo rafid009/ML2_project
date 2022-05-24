@@ -6,8 +6,11 @@ from torch.utils.data import Dataset
 import json
 import torch
 import pandas as pd
+from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
 
-def process_raw_data(root, processed_dir, out_path):
+def process_raw_data(root, processed_dir, out_path, k=3):
     data_files_dict = {
     'occupancy_features': f'{root}/occupancy_features_64.npy',
     'detection_features': [f'{root}/detection_features_v1_64.npy', f'{root}/detection_features_v2_64.npy', 
@@ -15,7 +18,7 @@ def process_raw_data(root, processed_dir, out_path):
                             f'{root}/detection_features_v5_64.npy'],
     'detection_label': f'{root}/detection_60_64.npy'
     }
-    processed_data_dict = {'occupancy_features': [], 'detection_features': [], 'detection_label': []}
+    processed_data_dict = {'occupancy_features': [], 'detection_features': [], 'detection_label': [], 'neighbors': []}
     occ_features = np.load(data_files_dict['occupancy_features'])
     detect_visits = []
     label = np.load(data_files_dict['detection_label'])
@@ -26,13 +29,15 @@ def process_raw_data(root, processed_dir, out_path):
         detect_visits.append(dfeat)
     detect_features = np.stack(detect_visits, axis=1)
 
-    for i in range(len(occ_features)):
+    for i in tqdm(range(len(occ_features)), desc='Data Saved'):
         if np.sum(~np.isnan(occ_features[i])) == 0 or np.sum(~np.isnan(detect_features[i])) == 0:
             continue
         if np.sum(np.isnan(occ_features[i])) > 0:
             occ_features[i] = np.nan_to_num(occ_features[i])
         if np.sum(np.isnan(detect_features[i])) > 0:
             detect_features[i] = np.nan_to_num(detect_features[i])
+        neighbors = save_k_neighbors(torch.tensor(occ_features[i], dtype=torch.float32), k)
+        np.save(f"{processed_dir}/neighbors_{i}.npy", neighbors)
         np.save(f"{processed_dir}/occ-feat-{i}.npy", occ_features[i])
         np.save(f"{processed_dir}/detect-label-{i}.npy", label[i])
         np.save(f"{processed_dir}/detect-fetures-{i}.npy", detect_features[i])
@@ -44,39 +49,45 @@ def process_raw_data(root, processed_dir, out_path):
         json.dump(processed_data_dict, out)
     return processed_data_dict
 
-def save_k_neighbors(occ_f, filename='../birds_data/neighbors.json'):
-    x = np.arange(start=0, end=occ_f.shape[2])
+def save_k_neighbors(occ_f, k):
+    x = torch.arange(start=0, end=occ_f.shape[2], dtype=torch.float32)
     xx = x.repeat([occ_f.shape[1], 1])
-    y = np.arange(start=0, end=occ_f.shape[1])
-    y = np.reshape(y, (-1, 1))
+    y = torch.arange(start=0, end=occ_f.shape[1], dtype=torch.float32).view(-1, 1)
+    # y = torch.reshape(y, (-1, 1))
     yy = y.repeat([1, occ_f.shape[2]])
-    occ = np.transpose(occ_f, (1,2,0))
-    occ = np.concatenate((occ, xx, yy), axis=0)
-    occ = np.reshape(occ, (occ.shape[0] * occ.shape[1], occ.shape[2]))
-    knn = NearestNeighbors(n_neighbors=3)
+    # xx = xx.detach().numpy()
+    # yy = yy.detach().numpy()
+    pos = torch.stack([xx, yy], dim=0)
+    occ = torch.cat([occ_f, pos], axis=0)
+    occ = torch.permute(occ, (1,2,0))
+    occ = occ.flatten(start_dim=0, end_dim=1)
+    knn = NearestNeighbors(n_neighbors=k)
     knn.fit(occ)
-    neighbors = {}
+    neighbor_edges = [[],[]]
     for i in range(len(occ)):
-        dists, neighs = knn.kneighbors(occ[i])
-        print(f"dist: {dists.shape}, neighs: {neighs.shape}")
-        neighbors[i] = neighs
-    with open(filename, 'w') as out:
-        json.dump(neighbors, out)
-    return
+        occ_data = torch.unsqueeze(occ[i], dim=0)
+        _, neighs = knn.kneighbors(occ_data)
+        # print(f"dist: {dists.shape}, neighs: {neighs.shape}")
+        neighbors = neighs.tolist()
+        for n in neighbors:
+            neighbor_edges[0].append(i)
+            neighbor_edges[1].append(n)
+    return np.array(neighbor_edges)
 
 class BirdSpeciesDataset(Dataset):
-    def __init__(self, data_root, tile_size, n_visits=5): 
+    def __init__(self, data_root, tile_size, n_visits=5, k=3): 
         self.tile_size = tile_size
         self.data_root = f"{data_root}/T{tile_size}"
         self.processed_meta_data = None
         self.processed_meta_path = f"{self.data_root}/processed_meta.json"
         self.processed_dir = f"{self.data_root}/processed/"
         self.n_visits = n_visits
+        self.k = k
 
         if not osp.exists(self.processed_meta_path):
             if not osp.isdir(self.processed_dir):
                 os.makedirs(self.processed_dir)
-            self.processed_meta_data = process_raw_data(self.data_root, self.processed_dir, self.processed_meta_path)
+            self.processed_meta_data = process_raw_data(self.data_root, self.processed_dir, self.processed_meta_path, k)
         else:
             with open(self.processed_meta_path, 'r') as json_file:
                 self.processed_meta_data = json.load(json_file)

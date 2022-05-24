@@ -26,7 +26,7 @@ dataloaders = {x:DataLoader(datasets[x], batch_size=2, shuffle=True) for x in ['
 for i, sample in enumerate(dataloaders['train']):
     # print(f"{i}, {sample['occupancy_feature'].shape}\n{sample['detection_feature'].shape}\n{sample['detection'].shape}")
     print(f'{i}:')
-    print(f"{sample[f'detection_{0}'].shape}")
+    # print(f"{sample[f'detection_{0}'].shape}")
     for key in sample.keys():
         print(f"\t{key} = {sample[key].shape}")
     if i == 2:
