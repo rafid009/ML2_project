@@ -172,7 +172,7 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
     plt.savefig(f"{plots_folder}/train-vs-val-plot-lr({lr}).png", dpi=300)
     plt.close()
 
-lrs = [0.01, 0.001, 0.005, 0.0009]
+lrs = [0.01, 0.001, 0.1, 0.05]
 plots_folder = './plots_bird'
 if not os.path.isdir(plots_folder):
     os.makedirs(plots_folder)
