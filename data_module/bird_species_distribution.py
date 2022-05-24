@@ -4,6 +4,9 @@ import numpy as np
 from torch.utils.data import Dataset
 import json
 import torch
+from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
 
 def process_raw_data(root, processed_dir, out_path):
     data_files_dict = {
@@ -24,7 +27,7 @@ def process_raw_data(root, processed_dir, out_path):
         detect_visits.append(dfeat)
     detect_features = np.stack(detect_visits, axis=1)
 
-    for i in range(len(occ_features)):
+    for i in tqdm(range(len(occ_features)), desc="Data Saved"):
         if np.sum(~np.isnan(occ_features[i])) == 0 or np.sum(~np.isnan(detect_features[i])) == 0:
             continue
         if np.sum(np.isnan(occ_features[i])) > 0:
