@@ -1,9 +1,11 @@
 import os
 import os.path as osp
 import numpy as np
+from sklearn.neighbors import NearestNeighbors
 from torch.utils.data import Dataset
 import json
 import torch
+import pandas as pd
 
 def process_raw_data(root, processed_dir, out_path):
     data_files_dict = {
@@ -42,7 +44,24 @@ def process_raw_data(root, processed_dir, out_path):
         json.dump(processed_data_dict, out)
     return processed_data_dict
 
-def save_k_neighbors(occ_f):
+def save_k_neighbors(occ_f, filename='../birds_data/neighbors.json'):
+    x = np.arange(start=0, end=occ_f.shape[2])
+    xx = x.repeat([occ_f.shape[1], 1])
+    y = np.arange(start=0, end=occ_f.shape[1])
+    y = np.reshape(y, (-1, 1))
+    yy = y.repeat([1, occ_f.shape[2]])
+    occ = np.transpose(occ_f, (1,2,0))
+    occ = np.concatenate((occ, xx, yy), axis=0)
+    occ = np.reshape(occ, (occ.shape[0] * occ.shape[1], occ.shape[2]))
+    knn = NearestNeighbors(n_neighbors=3)
+    knn.fit(occ)
+    neighbors = {}
+    for i in range(len(occ)):
+        dists, neighs = knn.kneighbors(occ[i])
+        print(f"dist: {dists.shape}, neighs: {neighs.shape}")
+        neighbors[i] = neighs
+    with open(filename, 'w') as out:
+        json.dump(neighbors, out)
     return
 
 class BirdSpeciesDataset(Dataset):
