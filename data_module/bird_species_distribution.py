@@ -22,7 +22,7 @@ def process_raw_data(root, processed_dir, out_path, k=3):
     occ_features = np.load(data_files_dict['occupancy_features'])
     detect_visits = []
     label = np.load(data_files_dict['detection_label'])
-    print(f'label: {label.shape}')
+    # print(f'label: {label.shape}')
     
     for d in data_files_dict['detection_features']:
         dfeat = np.load(d)
@@ -44,6 +44,7 @@ def process_raw_data(root, processed_dir, out_path, k=3):
         processed_data_dict['occupancy_features'].append(f"{processed_dir}/occ-feat-{i}.npy")
         processed_data_dict['detection_features'].append(f"{processed_dir}/detect-fetures-{i}.npy")
         processed_data_dict['detection_label'].append(f"{processed_dir}/detect-label-{i}.npy")
+        processed_data_dict['neighbors'].append(f"{processed_dir}/neighbors_{i}.npy")
     
     with open(out_path, 'w') as out:
         json.dump(processed_data_dict, out)
@@ -66,13 +67,18 @@ def save_k_neighbors(occ_f, k):
     neighbor_edges = [[],[]]
     for i in range(len(occ)):
         occ_data = torch.unsqueeze(occ[i], dim=0)
-        _, neighs = knn.kneighbors(occ_data)
+        dists, neighs = knn.kneighbors(occ_data)
         # print(f"dist: {dists.shape}, neighs: {neighs.shape}")
-        neighbors = neighs.tolist()
+        
+        neighbors = neighs[0].tolist()
+        # print(neighbors)
         for n in neighbors:
             neighbor_edges[0].append(i)
             neighbor_edges[1].append(n)
-    return np.array(neighbor_edges)
+    # print(f"neighbor len: {len(neighbor_edges)}, n[0]: {len(neighbor_edges[0])}, n[1]: {len(neighbor_edges[1])}")
+    nei = np.array(neighbor_edges)
+    # print(f"{nei}\n{nei.shape}")
+    return nei
 
 class BirdSpeciesDataset(Dataset):
     def __init__(self, data_root, tile_size, n_visits=5, k=3): 
@@ -98,6 +104,7 @@ class BirdSpeciesDataset(Dataset):
     def __getitem__(self, idx):
         sample = {}
         sample['occupancy_feature'] = torch.tensor(np.load(self.processed_meta_data['occupancy_features'][idx]), dtype=torch.float32)
+        sample['neighbors'] = torch.tensor(np.load(self.processed_meta_data['neighbors'][idx], allow_pickle=True), dtype=torch.long)
         d_feats = torch.tensor(np.load(self.processed_meta_data['detection_features'][idx]), dtype=torch.float32)
         detections = torch.tensor(np.load(self.processed_meta_data['detection_label'][idx]), dtype=torch.float32)  
         for v in range(self.n_visits):
