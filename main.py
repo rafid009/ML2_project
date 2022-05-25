@@ -68,7 +68,7 @@ def get_visit_likelihood(d, y):
     return l * mask, y_t
 
 def get_avg_visit_loss(occ, likelihood, K_y):
-    loss = torch.sum(torch.sum(occ * likelihood + (1 - occ) * K_y, dim=1) / K_y.sum(), dim=1)
+    loss = torch.sum(torch.sum(occ * likelihood + (1 - occ) * K_y, dim=1), dim=1)
     return loss.mean()
 
 def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
