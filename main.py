@@ -19,6 +19,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+EPSILON = 1e-6
 
 def train_val_test_dataset(dataset, val_split=0.20, test_split=0.20):
     train_idx, test_idx = train_test_split(list(range(len(dataset))), test_size=test_split, shuffle=True, random_state=10)
@@ -69,7 +70,7 @@ def get_visit_likelihood(d, y):
 
 def get_avg_visit_loss(occ, likelihood, K_y):
     l = occ * likelihood + (1 - occ) * K_y
-    l = torch.flatten(l, start_dim=1)
+    l = torch.flatten(l, start_dim=1) + EPSILON
     print(f"l = {l}")
     ll = torch.log(l)
     print(f"ll: {ll}")
