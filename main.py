@@ -68,7 +68,12 @@ def get_visit_likelihood(d, y):
     return l * mask, y_t
 
 def get_avg_visit_loss(occ, likelihood, K_y):
-    loss = torch.sum(-1.0 * torch.sum(torch.log(occ * likelihood + (1 - occ) * K_y, dim=1)), dim=1)
+    ll = torch.log(occ * likelihood + (1 - occ) * K_y)
+    print(f"ll: {ll.shape}")
+    nll = -1.0 * torch.sum(ll, dim=1)
+    print(f"nll: {nll.shape}")
+    loss = torch.sum(ll, dim=1)
+    print(f"loss: {loss.shape}")
     return loss.mean()
 
 def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
@@ -101,9 +106,8 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                     bernouli_l, masked_y = get_visit_likelihood(detect, target)
                     likelihood_loss = likelihood_loss * bernouli_l
                     K_y = torch.max(K_y, masked_y)
-                n_labeled_sites = K_y.sum()
                 K_y = 1 - K_y
-                loss = get_avg_visit_loss(occ, likelihood_loss, K_y, n_labeled_sites)
+                loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
                 loss = loss / n_visits
                 loss.backward()
                 optimizer.step()
