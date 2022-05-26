@@ -72,9 +72,9 @@ def get_avg_visit_loss(occ, likelihood, K_y):
     print(f"ll: {ll.shape}")
     ll = torch.flatten(ll, start_dim=1)
     print(f"flatten: {ll.shape}")
-    nll = -1.0 * torch.sum(ll, dim=1)
+    nll = -1.0 * torch.mean(ll, dim=1)
     print(f"nll: {nll.shape}")
-    loss = nll.mean() #torch.sum(ll, dim=1)
+    loss = torch.mean(nll) #torch.sum(ll, dim=1)
     print(f"loss: {loss}")
     return loss
 
