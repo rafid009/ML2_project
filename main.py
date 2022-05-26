@@ -68,12 +68,13 @@ def get_visit_likelihood(d, y):
     return l * mask, y_t
 
 def get_avg_visit_loss(occ, likelihood, K_y):
-    ll = torch.log(occ * likelihood + (1 - occ) * K_y)
+    l = occ * likelihood + (1 - occ) * K_y
+    l = torch.flatten(l, start_dim=1)
+    ll = torch.log(l)
     print(f"ll: {ll.shape}")
-    ll = torch.flatten(ll, start_dim=1)
-    print(f"flatten: {ll.shape}")
-    nll = -1.0 * torch.mean(ll, dim=1)
-    print(f"nll: {nll.shape}")
+    
+    nll = -1.0 * torch.sum(ll, dim=1)
+    print(f"nll: {nll}")
     loss = torch.mean(nll) #torch.sum(ll, dim=1)
     print(f"loss: {loss}")
     return loss
