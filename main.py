@@ -70,9 +70,10 @@ def get_visit_likelihood(d, y):
 def get_avg_visit_loss(occ, likelihood, K_y):
     ll = torch.log(occ * likelihood + (1 - occ) * K_y)
     print(f"ll: {ll.shape}")
+    ll = torch.flatten(ll, start_dim=1)
     nll = -1.0 * torch.sum(ll, dim=1)
     print(f"nll: {nll.shape}")
-    loss = torch.sum(ll, dim=1)
+    loss = nll.mean() #torch.sum(ll, dim=1)
     print(f"loss: {loss.shape}")
     return loss.mean()
 
@@ -88,8 +89,9 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
             count = 0
             avg_visit_loss = 0
             avg_auc = 0
+            i = 0
             for data in train_loader:
-                
+                print(f"i = {i}")
                 optimizer.zero_grad()
                 
                 b_size = min(batch_size, len(data['occupancy_feature']))
@@ -120,6 +122,9 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                 total_train += loss.item()
                 total_val += val_loss
                 count += 1
+                i += 1
+                if i > 2:
+                    exit(0)
                 tepoch.update(1)
             result_dict['train'].append(total_train/count)
             result_dict['val'].append(total_val/count)
