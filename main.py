@@ -71,11 +71,12 @@ def get_avg_visit_loss(occ, likelihood, K_y):
     ll = torch.log(occ * likelihood + (1 - occ) * K_y)
     print(f"ll: {ll.shape}")
     ll = torch.flatten(ll, start_dim=1)
+    print(f"flatten: {ll.shape}")
     nll = -1.0 * torch.sum(ll, dim=1)
     print(f"nll: {nll.shape}")
     loss = nll.mean() #torch.sum(ll, dim=1)
-    print(f"loss: {loss.shape}")
-    return loss.mean()
+    print(f"loss: {loss}")
+    return loss
 
 def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
     result_dict = {'train': [], 'val': []}
@@ -156,7 +157,7 @@ def evaluate(val_loader, n_visits=5):
             detect = torch.squeeze(detect)
             target = data[f'detection_{v}'].to(device)
             bernouli_l, masked_y = get_visit_likelihood(detect, target)
-            print(f"det: {detect.shape}, targ: {target.shape}, bernou: {bernouli_l.shape}, likeli: {likelihood_loss.shape}")
+            # print(f"det: {detect.shape}, targ: {target.shape}, bernou: {bernouli_l.shape}, likeli: {likelihood_loss.shape}")
             likelihood_loss = likelihood_loss * bernouli_l
             # output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
             # target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
