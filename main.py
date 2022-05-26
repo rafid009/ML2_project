@@ -111,6 +111,7 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                     likelihood_loss = likelihood_loss * bernouli_l
                     K_y = torch.max(K_y, masked_y)
                 K_y = 1 - K_y
+                print(f"occ: {occ}\nlogLike: {likelihood_loss}")
                 loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
                 loss = loss / n_visits
                 loss.backward()
