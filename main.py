@@ -75,7 +75,7 @@ def get_avg_visit_loss(occ, likelihood, K_y):
     ll = torch.log(l)
     print(f"ll: {ll}")
     
-    nll = -1.0 * torch.sum(ll, dim=1)
+    nll = -1.0 * torch.mean(ll, dim=1)
     print(f"nll: {nll}")
     loss = torch.mean(nll) #torch.sum(ll, dim=1)
     print(f"loss: {loss}")
