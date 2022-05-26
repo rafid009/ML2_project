@@ -67,8 +67,8 @@ def get_visit_likelihood(d, y):
     l = l.to(device)
     return l * mask, y_t
 
-def get_avg_visit_loss(occ, likelihood, K_y, n_sites):
-    loss = torch.sum(torch.sum(occ * likelihood + (1 - occ) * K_y, dim=1) / n_sites, dim=1)
+def get_avg_visit_loss(occ, likelihood, K_y):
+    loss = torch.sum(-1.0 * torch.sum(torch.log(occ * likelihood + (1 - occ) * K_y, dim=1)), dim=1)
     return loss.mean()
 
 def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
@@ -103,7 +103,7 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                     K_y = torch.max(K_y, masked_y)
                 n_labeled_sites = K_y.sum()
                 K_y = 1 - K_y
-                loss = -1.0 * get_avg_visit_loss(occ, likelihood_loss, K_y, n_labeled_sites)
+                loss = get_avg_visit_loss(occ, likelihood_loss, K_y, n_labeled_sites)
                 loss = loss / n_visits
                 loss.backward()
                 optimizer.step()
@@ -154,6 +154,7 @@ def evaluate(val_loader, n_visits=5):
             # auc_v = roc_auc_score(target, output)
             # avg_auc += auc_v
             K_y = torch.max(K_y, masked_y)
+        K_y = 1 - K_y
         # avg_auc = avg_auc/n_visits
         # auc_dict[idx] = avg_auc
         loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
