@@ -58,22 +58,23 @@ def mask_out_nan(output, target):
     mask = ~torch.isnan(target)
     target = torch.nan_to_num(target)
     output = output * mask
+    mask.detach()
     return output, target
 
 def get_visit_likelihood(d, y):
     mask = ~torch.isnan(y).to(device)
     y_t = torch.nan_to_num(y).to(device)
-    # print(f"d: {d.shape} y_t: {y_t.shape} y: {y.shape}")
     l = torch.pow(d, y_t) * torch.pow((1 - d), (1 - y_t))
     l = l.to(device)
-    return l * mask, y_t
+    l = l * mask
+    return l, y_t
 
 def get_avg_visit_loss(occ, likelihood, K_y):
     l = occ * likelihood + (1 - occ) * K_y
     l = torch.flatten(l, start_dim=1) + EPSILON
     ll = torch.log(l)
     nll = -1.0 * torch.mean(ll, dim=1)
-    loss = torch.mean(nll) #torch.sum(ll, dim=1)
+    loss = torch.mean(nll)
     return loss
 
 def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
@@ -92,25 +93,28 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                 optimizer.zero_grad()
                 
                 b_size = min(batch_size, len(data['occupancy_feature']))
-                likelihood_loss = torch.ones((b_size, tile_size, tile_size)).to(device)
+                likelihood_loss = torch.ones((b_size, tile_size, tile_size), requires_grad=False).to(device)
                 occ = None
-                K_y = torch.zeros((b_size, tile_size, tile_size)).to(device)
+                K_y = torch.zeros((b_size, tile_size, tile_size), requires_grad=False).to(device)
                 for v in range(n_visits):
                     # print(f"d_target: {data[f'detection_{v}'].shape}")
                     output, occ, detect = model(data, v)
                     occ = torch.squeeze(occ)
                     detect = torch.squeeze(detect)
                     target = data[f'detection_{v}'].to(device)
-                    
-                    bernouli_l, masked_y = get_visit_likelihood(detect, target)
-                    likelihood_loss = likelihood_loss * bernouli_l
-                    K_y = torch.max(K_y, masked_y)
-                K_y = 1 - K_y
-                loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
-                loss = loss / n_visits
+                    with torch.no_grad():
+                        bernouli_l, masked_y = get_visit_likelihood(detect, target)
+                        likelihood_loss = likelihood_loss * bernouli_l
+                        bernouli_l.detach()
+                        K_y = torch.max(K_y, masked_y)
+                with torch.no_grad():
+                    K_y = 1 - K_y
+                    loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
+                    loss = loss / n_visits
                 loss.backward()
                 optimizer.step()
-                val_loss, auc_i = evaluate(val_loader)
+                with torch.no_grad():
+                    val_loss, auc_i = evaluate(val_loader)
                 # if epoch not in auc_dict.keys():
                 #     auc_dict[epoch] = [auc_i]
                 # else:
