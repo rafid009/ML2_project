@@ -74,7 +74,7 @@ def get_avg_visit_loss(occ, likelihood, K_y):
     l = torch.flatten(l, start_dim=1) + EPSILON
     ll = torch.log(l)
     nll = -1.0 * torch.mean(ll, dim=1)
-    loss = torch.mean(nll)
+    loss = torch.mean(nll) #torch.sum(ll, dim=1)
     return loss
 
 def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
