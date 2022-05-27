@@ -37,7 +37,7 @@ data_root = '../bird_data'
 batch_size = 64
 occ_features = 5
 detect_features = 3
-n_epoch = 30
+n_epoch = 40
 model_path = '../saved_bird_models'
 dataset = BirdSpeciesDataset(data_root, tile_size)
 datasets = train_val_test_dataset(dataset)
@@ -180,7 +180,7 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
     plt.savefig(f"{plots_folder}/train-vs-val-plot-lr({lr}).png", dpi=300)
     plt.close()
 
-lrs = [0.01, 0.001, 0.1, 0.05]
+lrs = [0.001, 0.005, 0.0025]#[0.01, 0.001, 0.1, 0.05]
 plots_folder = './plots_bird'
 if not os.path.isdir(plots_folder):
     os.makedirs(plots_folder)
