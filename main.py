@@ -109,8 +109,8 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                         K_y = torch.max(K_y, masked_y)
                 with torch.no_grad():
                     K_y = 1 - K_y
-                    loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
-                    loss = loss / n_visits
+                loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
+                loss = loss / n_visits
                 loss.backward()
                 optimizer.step()
                 with torch.no_grad():
