@@ -58,33 +58,33 @@ class DetectionEncoderCNN(nn.Module):
 
     def __init__(self, in_channel, out_channel):
         super(DetectionEncoderCNN, self).__init__()
-        # self.fcn = FCN(in_channel, out_channel)
-        self.conv3d = nn.Conv3d(in_channel, 1, 3, padding='same')
-        self.fcn8 = FCN8s()
-        state_dict = torch.load(FCN8s.download())
+        self.fcn = FCN(in_channel, out_channel)
+        # self.conv3d = nn.Conv3d(in_channel, 1, 3, padding='same')
+        # self.fcn8 = FCN8s()
+        # state_dict = torch.load(FCN8s.download())
 
-        self.fcn8.load_state_dict(state_dict)
+        # self.fcn8.load_state_dict(state_dict)
         
-        names = []
-        for name, module in self.fcn8.named_modules():
-            names.append(name)
+        # names = []
+        # for name, module in self.fcn8.named_modules():
+        #     names.append(name)
 
-        modified_last_layers = [nn.Conv2d(4096, out_channel, kernel_size=(1, 1), stride=(1, 1)),
-                                nn.Conv2d(256, out_channel, kernel_size=(1, 1), stride=(1, 1)),
-                                nn.Conv2d(512, out_channel, kernel_size=(1, 1), stride=(1, 1)),
-                                nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(4, 4), stride=(2, 2), bias=False),
-                                nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(16, 16), stride=(8, 8), bias=False),
-                                nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(4, 4), stride=(2, 2), bias=False)]
-        i = 0
-        for name in names[-6:]:
-            setattr(self.fcn8, name, modified_last_layers[i])
-            i += 1
+        # modified_last_layers = [nn.Conv2d(4096, out_channel, kernel_size=(1, 1), stride=(1, 1)),
+        #                         nn.Conv2d(256, out_channel, kernel_size=(1, 1), stride=(1, 1)),
+        #                         nn.Conv2d(512, out_channel, kernel_size=(1, 1), stride=(1, 1)),
+        #                         nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(4, 4), stride=(2, 2), bias=False),
+        #                         nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(16, 16), stride=(8, 8), bias=False),
+        #                         nn.ConvTranspose2d(out_channel, out_channel, kernel_size=(4, 4), stride=(2, 2), bias=False)]
+        # i = 0
+        # for name in names[-6:]:
+        #     setattr(self.fcn8, name, modified_last_layers[i])
+        #     i += 1
 
-        self.fcn8 = self.fcn8.float()
+        # self.fcn8 = self.fcn8.float()
         self.sigmoid = nn.Sigmoid()
         
     def forward(self, x):
-        return self.sigmoid(self.fcn8(x))#self.fcn(x) 
+        return self.sigmoid(self.fcn(x))#self.fcn(x) 
 
 class OccupancyDetectionModel(nn.Module):
     def __init__(self, occ_in_channel, detect_in_channel, out_channel):
