@@ -13,7 +13,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, auc, precision_recall_curve
 import json
 import warnings
 warnings.filterwarnings("ignore")
@@ -46,20 +46,16 @@ datasets = train_val_test_dataset(dataset)
 
 dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) for x in ['train','val', 'test']}
 
-# for i, sample in enumerate(dataloaders['train']):
-#     print(f"{i}, {sample['occupancy_feature'].shape}\n{sample['detection_feature'].shape}\n{sample['detection'].shape}")
-#     if i == 2:
-#         break
 
 model = OccupancyDetectionModel(occ_features, detect_features, 1).float()
 model = model.to(device)
-# criterion = nn.BCEWithLogitsLoss(reduction='mean')
 
 
 def mask_out_nan(output, target):
     mask = ~torch.isnan(target)
     target = torch.nan_to_num(target)
     output = output * mask
+    mask.detach()
     return output, target
 
 def get_visit_likelihood(d, y):
@@ -75,7 +71,7 @@ def get_avg_visit_loss(occ, likelihood, K_y):
     l = torch.flatten(l, start_dim=1) + EPSILON
     ll = torch.log(l)
     nll = -1.0 * torch.mean(ll, dim=1)
-    loss = torch.mean(nll) #torch.sum(ll, dim=1)
+    loss = torch.mean(nll)
     return loss
 
 def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
@@ -116,10 +112,7 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                 optimizer.step()
                 with torch.no_grad():
                     val_loss, auc_i = evaluate(val_loader)
-                # if epoch not in auc_dict.keys():
-                #     auc_dict[epoch] = [auc_i]
-                # else:
-                #     auc_dict[epoch].append(auc_i)
+
                 tepoch.set_postfix(train_loss=loss.item(), val_loss=val_loss)
                 total_train += loss.item()
                 total_val += val_loss
@@ -134,43 +127,182 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
             torch.save(model.state_dict(), f"{model_path}/model-e{epoch}-l({np.round(val_loss, 5)}).pth")
     df = pd.DataFrame(result_dict)
     df.to_csv(eval_path, index=False)
-    # df_auc = json.dumps(auc_dict, indent = 4)
-    # with open('auc.json', 'w') as f:
-    #     json.dump(auc_dict, f, indent=4)
+
+
+def get_metrics (y_true, y_score):
+   
+    '''
+        Takes flattened arrays of true labels and predicted scores 
+        Returns area under ROC curve (AUROC) and area under Precision-Recall curved (AUPRC)
+        Returns -1 if true labels only have one class. 
+        Parameters
+            y_true : ndarray of ground truth class labels
+            y_score : ndarray of target scores
+    
+    '''
+    y_true = y_true.flatten()
+    y_score = y_score.flatten()
+
+    
+    # Check if there are any NaNs in the the class labels
+    #   if present, remove those pixels
+    
+    nan_indices_true = np.argwhere(np.isnan(y_true)) # Get indices of NaN pixels
+    nan_indices_score = np.argwhere(np.isnan(y_score))
+    
+    
+    print (nan_indices_true, nan_indices_score )
+
+    nan_indices = np.unique(np.concatenate((nan_indices_true, nan_indices_score)))
+
+    #if(not np.any(nan_indices)): 
+    #if NaNs are present they will be deleted, else the arrays will be unchanged
+    
+    print(y_true.shape, y_score.shape)
+    print(y_true, y_score)
+    y_true = np.delete(y_true, nan_indices)
+    y_score = np.delete(y_score, nan_indices)
+    print(y_true.shape, y_score.shape)
+    print(y_true, y_score)
+
+
+    # Check if only one class is present in class labels then scores are undefined 
+    #   (we can only calculate tile-wise AUCs for tiles with atleast 1 pixel of each class in true label)
+    #   if AUC is undefined skip tile and return -1 to indicate so
+    
+    print(nan_indices)
+    print(np.unique(y_true))
+    if(np.unique(y_true).shape[0]==1):
+        return -1
+
+    else:
+        auroc = roc_auc_score(y_true, y_score)
+        precision, recall, _ = precision_recall_curve(y_true, y_score)
+        auprc = auc(recall, precision)
+
+        return {'AUROC': auroc, 'AUPRC': auprc} 
                 
 def evaluate(val_loader, n_visits=5):
     total_loss = 0
     count = 0
     model.eval()
-    auc_dict = {}
+    auroc_occ_dict = {}
+    auprc_occ_dict = {}
+    auroc_det_dict = {}
+    auprc_det_dict = {}
     for idx, data in enumerate(val_loader):
         avg_loss = 0
-        avg_auc = 0
+        avg_auroc_v = 0
+        avg_auprc_v = 0
         b_size = min(batch_size, len(data['occupancy_feature']))
         likelihood_loss = torch.ones((b_size, tile_size, tile_size)).to(device)
         occ = None
+        occ_target = None
         K_y = torch.zeros((b_size, tile_size, tile_size)).to(device)
         for v in range(n_visits):
             output, occ, detect = model(data, v)
             occ = torch.squeeze(occ)
+            occ_target = data[f'occupancy_label'].to(device)
             detect = torch.squeeze(detect)
             target = data[f'detection_{v}'].to(device)
             bernouli_l, masked_y = get_visit_likelihood(detect, target)
             # print(f"det: {detect.shape}, targ: {target.shape}, bernou: {bernouli_l.shape}, likeli: {likelihood_loss.shape}")
             likelihood_loss = likelihood_loss * bernouli_l
-            # output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
-            # target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
-            # auc_v = roc_auc_score(target, output)
-            # avg_auc += auc_v
+            
+            output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
+            target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
+        
+            det_metrics = get_metrics(target, output)
+        
+            if(det_metrics != -1):
+                avg_auroc_v += det_metrics['AUROC'] 
+                avg_auprc_v += det_metrics['AUPRC']
+        
             K_y = torch.max(K_y, masked_y)
+     
+        occ_np = torch.flatten(occ, start_dim=1).cpu().detach().numpy()
+        occ_target = torch.flatten(occ_target, start_dim=1).cpu().detach().numpy()
+    
+        occ_metrics = get_metrics(occ_target, occ_np)
+        
+        if(occ_metrics != -1):
+            auroc_occ_dict[idx] = occ_metrics['AUROC']
+            auprc_occ_dict[idx] = occ_metrics['AUPRC']
+
         K_y = 1 - K_y
-        # avg_auc = avg_auc/n_visits
-        # auc_dict[idx] = avg_auc
+    
+        avg_auroc_v = avg_auroc_v/n_visits
+        avg_auprc_v = avg_auprc_v/n_visits
+
+        auroc_det_dict[idx] = avg_auroc_v
+        auprc_det_dict[idx] = avg_auprc_v
+
         loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
         total_loss += (loss / n_visits)
         count += 1
+
+    auc_dict = {'OCC-AUROC': auroc_occ_dict,
+        'OCC-AUPRC': auprc_occ_dict, 
+        'DET-AUROC': auroc_det_dict,
+        'DET-AUPRC': auprc_det_dict
+    }
     model.train()
     return total_loss.item() / count, auc_dict
+
+def test(test_loader, n_visits=5):
+    model.eval()
+    auroc_occ_dict = {}
+    auprc_occ_dict = {}
+    auroc_det_dict = {}
+    auprc_det_dict = {}
+    for idx, data in enumerate(test_loader):
+        avg_auroc_v = 0
+        avg_auprc_v = 0
+        b_size = min(batch_size, len(data['occupancy_feature']))
+        occ = None
+        occ_target = None
+        for v in range(n_visits):
+            output, occ, detect = model(data, v)
+            occ = torch.squeeze(occ)
+            occ_target = data[f'occupancy_label'].to(device)
+            detect = torch.squeeze(detect)
+            target = data[f'detection_{v}'].to(device)
+            # print(f"det: {detect.shape}, targ: {target.shape}, bernou: {bernouli_l.shape}, likeli: {likelihood_loss.shape}")
+            
+            output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
+            target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
+        
+            det_metrics = get_metrics(target, output)
+        
+            if(det_metrics != -1):
+                avg_auroc_v += det_metrics['AUROC'] 
+                avg_auprc_v += det_metrics['AUPRC']
+        
+     
+        occ = torch.flatten(occ, start_dim=1).cpu().detach().numpy()
+        occ_target = torch.flatten(occ_target, start_dim=1).cpu().detach().numpy()
+    
+        occ_metrics = get_metrics(occ_target, occ)
+        
+        if(occ_metrics != -1):
+            auroc_occ_dict[idx] = occ_metrics['AUROC']
+            auprc_occ_dict[idx] = occ_metrics['AUPRC']
+
+    
+        avg_auroc_v = avg_auroc_v/n_visits
+        avg_auprc_v = avg_auprc_v/n_visits
+
+        auroc_det_dict[idx] = avg_auroc_v
+        auprc_det_dict[idx] = avg_auprc_v
+
+
+    auc_dict = {'OCC-AUROC': auroc_occ_dict,
+                'OCC-AUPRC': auprc_occ_dict, 
+                'DET-AUROC': auroc_det_dict,
+                'DET-AUPRC': auprc_det_dict
+        }
+    model.train()
+    return auc_dict
 
 def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
     epochs = [e for e in range(1, n_epochs + 1)]
@@ -186,8 +318,10 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
     plt.savefig(f"{plots_folder}/train-vs-val-plot-lr({lr}).png", dpi=300)
     plt.close()
 
+
 lrs = [0.001, 0.005, 0.01]#[0.01, 0.001, 0.1, 0.05]
-plots_folder = './plots_bird_new'
+plots_folder = './SDM_plots'
+
 if not os.path.isdir(plots_folder):
     os.makedirs(plots_folder)
 for lr in lrs:
@@ -196,4 +330,7 @@ for lr in lrs:
     train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file)
     df = pd.read_csv(plot_file)
     plot_loss(n_epoch, df['train'], df['val'], lr, plots_folder)
+    aucs = test(dataloaders['test'])
 
+    with open(f"{plots_folder}/auc-test-{lr}.json", "w") as outfile:
+        json.dump(aucs, outfile)
