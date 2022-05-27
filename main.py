@@ -34,7 +34,7 @@ def train_val_test_dataset(dataset, val_split=0.20, test_split=0.20):
 
 tile_size = 64
 data_root = '../bird_data'
-batch_size = 64
+batch_size = 32
 occ_features = 5
 detect_features = 3
 n_epoch = 40
