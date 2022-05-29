@@ -1,9 +1,14 @@
 from turtle import forward
+from sklearn import neighbors
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchfcn.models.fcn8s import FCN8s
 import torchvision.models as models
+from torch_geometric.data import Data
+
+from torch_geometric.nn import GCNConv
+from torch_geometric.loader import DataLoader
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -93,11 +98,24 @@ class OccupancyDetectionModel(nn.Module):
         self.detect_features_encoder = DetectionEncoderCNN(detect_in_channel, out_channel)
         self.conv2d = nn.Conv2d(out_channel, out_channel, 3, padding='same')
         self.sigmoid = nn.Sigmoid()
+        self.gcn = GCNConv(1, 1, improved=True)
         
     def forward(self, x, visit):
-        occ = x['occupancy_feature'].to(device)
+        occ_origin = x['occupancy_feature'].to(device)
         detect = x[f'detection_feature_{visit}'].to(device)
-        occ = self.occ_features_encoder(occ)
+        
+        occ_t = self.occ_features_encoder(occ_origin)
+        occ_t = torch.squeeze(occ_t)
+        occ_t = torch.unsqueeze(occ_t, dim=2)
+
+        edges = x[f"neighbors"].to(device)
+        nodes = torch.flatten(occ_t, start_dim=1).view(-1, 1)
+        loader = [Data(nodes[i], edges[i]) for i in range(len(nodes))]
+
+        graph_out = None
+        for i, data in enumerate(loader):
+            graph_out = self.gcn(nodes, edges)
+        occ = graph_out.view(len(nodes), 1, occ_origin.shape[2], occ_origin.shape[3])
         detect = self.detect_features_encoder(detect)
         cat = detect * occ
         out = self.sigmoid(self.conv2d(cat))
