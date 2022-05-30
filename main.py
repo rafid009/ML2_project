@@ -189,7 +189,7 @@ plots_folder = './plots_bird'
 if not os.path.isdir(plots_folder):
     os.makedirs(plots_folder)
 for lr in lrs:
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
     plot_file = f"{plots_folder}/train-vs-valid-{lr}.csv"
     train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file)
     df = pd.read_csv(plot_file)
