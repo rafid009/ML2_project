@@ -118,6 +118,7 @@ class OccupancyDetectionModel(nn.Module):
         graph_out = None
         for i, data in enumerate(loader):
             graph_out = self.gcn(data.x, data.edge_index)
+        print(f"graph out: {graph_out.shape}")
         occ = graph_out.view(len(nodes), 1, occ_origin.shape[2], occ_origin.shape[3])
         detect = self.detect_features_encoder(detect)
         cat = detect * occ
