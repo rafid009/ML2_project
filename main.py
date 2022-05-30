@@ -34,7 +34,7 @@ def train_val_test_dataset(dataset, val_split=0.20, test_split=0.20):
 
 tile_size = 64
 data_root = '../bird_data'
-batch_size = 1
+batch_size = 32
 occ_features = 5
 detect_features = 3
 n_epoch = 40
@@ -123,7 +123,6 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                 total_val += val_loss
                 count += 1
                 tepoch.update(1)
-                exit(0)
             result_dict['train'].append(total_train/count)
             result_dict['val'].append(total_val/count)
         if epoch % 5 == 0:
