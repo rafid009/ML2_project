@@ -107,7 +107,7 @@ class OccupancyDetectionModel(nn.Module):
         occ_t = self.occ_features_encoder(occ_origin)
         print(f"occ_t_1: {occ_t.shape}")
         # occ_t = torch.squeeze(occ_t)
-        occ_t = torch.unsqueeze(occ_t, dim=2)
+        # occ_t = torch.unsqueeze(occ_t, dim=2)
         print(f"occ_t_2: {occ_t.shape}")
         edges = x[f"neighbors"].to(device)
         print(f"occ orig: {occ_origin.shape}")
