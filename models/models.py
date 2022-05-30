@@ -114,7 +114,7 @@ class OccupancyDetectionModel(nn.Module):
         nodes = torch.flatten(occ_t, start_dim=1).view(occ_origin.shape[0], -1, 1)
         print(f"nodes: {nodes.shape}, edges: {edges.shape}")
         data_list = [Data(nodes[i], edges[i]) for i in range(len(nodes))]
-        loader = DataLoader(data_list, batch_size=1)
+        loader = DataLoader(data_list, batch_size=len(nodes))
         graph_out = None
         for i, data in enumerate(loader):
             print(data.x.shape)
