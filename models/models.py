@@ -105,7 +105,7 @@ class OccupancyDetectionModel(nn.Module):
         detect = x[f'detection_feature_{visit}'].to(device)
         
         occ_t = self.occ_features_encoder(occ_origin)
-        occ_t = torch.squeeze(occ_t)
+        # occ_t = torch.squeeze(occ_t)
         occ_t = torch.unsqueeze(occ_t, dim=2)
 
         edges = x[f"neighbors"].to(device)
