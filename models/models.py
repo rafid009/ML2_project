@@ -105,21 +105,21 @@ class OccupancyDetectionModel(nn.Module):
         detect = x[f'detection_feature_{visit}'].to(device)
         
         occ_t = self.occ_features_encoder(occ_origin)
-        print(f"occ_t_1: {occ_t.shape}")
+        # print(f"occ_t_1: {occ_t.shape}")
         # occ_t = torch.squeeze(occ_t)
         # occ_t = torch.unsqueeze(occ_t, dim=2)
-        print(f"occ_t_2: {occ_t.shape}")
+        # print(f"occ_t_2: {occ_t.shape}")
         edges = x[f"neighbors"].to(device)
-        print(f"occ orig: {occ_origin.shape}")
+        # print(f"occ orig: {occ_origin.shape}")
         nodes = torch.flatten(occ_t, start_dim=1).view(occ_origin.shape[0], -1, 1)
-        print(f"nodes: {nodes.shape}, edges: {edges.shape}")
+        # print(f"nodes: {nodes.shape}, edges: {edges.shape}")
         data_list = [Data(nodes[i], edges[i]) for i in range(len(nodes))]
         loader = DataLoader(data_list, batch_size=len(nodes))
         graph_out = None
         for i, data in enumerate(loader):
-            print(data.x.shape)
+            # print(data.x.shape)
             graph_out = self.gcn(data.x, data.edge_index)
-        print(f"graph out: {graph_out.shape}")
+        # print(f"graph out: {graph_out.shape}")
         occ = graph_out.view(len(nodes), 1, occ_origin.shape[2], occ_origin.shape[3])
         detect = self.detect_features_encoder(detect)
         cat = detect * occ
