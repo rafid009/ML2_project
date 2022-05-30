@@ -113,8 +113,8 @@ class OccupancyDetectionModel(nn.Module):
         print(f"occ orig: {occ_origin.shape}")
         nodes = torch.flatten(occ_t, start_dim=1).view(occ_origin.shape[0], -1, 1)
         print(f"nodes: {nodes.shape}, edges: {edges.shape}")
-        loader = [Data(nodes[i], edges[i]) for i in range(len(nodes))]
-
+        data_list = [Data(nodes[i], edges[i]) for i in range(len(nodes))]
+        loader = DataLoader(data_list, batch_size=1)
         graph_out = None
         for i, data in enumerate(loader):
             graph_out = self.gcn(data.x, data.edge_index)
