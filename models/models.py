@@ -109,7 +109,7 @@ class OccupancyDetectionModel(nn.Module):
         occ_t = torch.unsqueeze(occ_t, dim=2)
 
         edges = x[f"neighbors"].to(device)
-        print(f"occ orig: {occ_origin.shape}\nedges: {edges.shape}\nnodes: {nodes.shape}")
+        print(f"occ orig: {occ_origin.shape}")
         nodes = torch.flatten(occ_t, start_dim=1).view(-1, 1)
         print(f"nodes: {nodes.shape}, edges: {edges.shape}")
         loader = [Data(nodes[i], edges[i]) for i in range(len(nodes))]
