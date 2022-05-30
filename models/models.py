@@ -110,11 +110,12 @@ class OccupancyDetectionModel(nn.Module):
 
         edges = x[f"neighbors"].to(device)
         nodes = torch.flatten(occ_t, start_dim=1).view(-1, 1)
+        print(f"nodes: {nodes.shape}, edges: {edges.shape}")
         loader = [Data(nodes[i], edges[i]) for i in range(len(nodes))]
 
         graph_out = None
         for i, data in enumerate(loader):
-            graph_out = self.gcn(nodes, edges)
+            graph_out = self.gcn(data.x, data.edge_index)
         occ = graph_out.view(len(nodes), 1, occ_origin.shape[2], occ_origin.shape[3])
         detect = self.detect_features_encoder(detect)
         cat = detect * occ
