@@ -34,12 +34,12 @@ def train_val_test_dataset(dataset, val_split=0.20, test_split=0.20):
     return datasets
 
 tile_size = 64
-data_root = '../bird_data_new'
+data_root = '../sdm_data'
 batch_size = 32
 occ_features = 5
 detect_features = 3
 n_epoch = 40
-model_path = '../saved_bird_models_new'
+model_path = '../sdm_models'
 if not os.path.isdir(model_path):
     os.makedirs(model_path)
 dataset = BirdSpeciesDataset(data_root, tile_size)
@@ -322,8 +322,8 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
     plt.close()
 
 
-lrs = [0.001, 0.005, 0.01]#[0.01, 0.001, 0.1, 0.05]
-plots_folder = './SDM_plots'
+lrs = [0.001, 0.00099, 0.01]#[0.01, 0.001, 0.1, 0.05]
+plots_folder = '../SDM_plots'
 
 if not os.path.isdir(plots_folder):
     os.makedirs(plots_folder)
