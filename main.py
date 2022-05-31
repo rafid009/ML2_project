@@ -15,6 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, auc, precision_recall_curve
 import json
+import sys
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -46,8 +47,10 @@ datasets = train_val_test_dataset(dataset)
 
 dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) for x in ['train','val', 'test']}
 
-
-model = OccupancyDetectionModel(occ_features, detect_features, 1).float()
+if sys.argv[1] == 'graph':
+    model = OccupancyDetectionModel(occ_features, detect_features, 1, is_graph=True).float()
+else:
+    model = OccupancyDetectionModel(occ_features, detect_features, 1, is_graph=False).float()
 model = model.to(device)
 
 

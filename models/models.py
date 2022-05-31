@@ -92,35 +92,37 @@ class DetectionEncoderCNN(nn.Module):
         return self.sigmoid(self.fcn(x))#self.fcn(x) 
 
 class OccupancyDetectionModel(nn.Module):
-    def __init__(self, occ_in_channel, detect_in_channel, out_channel):
+    def __init__(self, occ_in_channel, detect_in_channel, out_channel, is_graph=True):
         super(OccupancyDetectionModel, self).__init__()
         self.occ_features_encoder = OccupancyEncoderCNN(occ_in_channel, out_channel)
         self.detect_features_encoder = DetectionEncoderCNN(detect_in_channel, out_channel)
         self.conv2d = nn.Conv2d(out_channel, out_channel, 3, padding='same')
         self.sigmoid = nn.Sigmoid()
-        self.gcn = GCNConv(1, 1, improved=True)
+        self.is_graph = is_graph
+        if self.is_graph:
+            self.gcn = GCNConv(1, 1, improved=True)
         
     def forward(self, x, visit):
         occ_origin = x['occupancy_feature'].to(device)
         detect = x[f'detection_feature_{visit}'].to(device)
         
         occ_t = self.occ_features_encoder(occ_origin)
-        # print(f"occ_t_1: {occ_t.shape}")
-        # occ_t = torch.squeeze(occ_t)
-        # occ_t = torch.unsqueeze(occ_t, dim=2)
-        # print(f"occ_t_2: {occ_t.shape}")
-        edges = x[f"neighbors"].to(device)
-        # print(f"occ orig: {occ_origin.shape}")
-        nodes = torch.flatten(occ_t, start_dim=1).view(occ_origin.shape[0], -1, 1)
-        # print(f"nodes: {nodes.shape}, edges: {edges.shape}")
-        data_list = [Data(nodes[i], edges[i]) for i in range(len(nodes))]
-        loader = DataLoader(data_list, batch_size=len(nodes))
-        graph_out = None
-        for i, data in enumerate(loader):
-            # print(data.x.shape)
-            graph_out = self.gcn(data.x, data.edge_index)
-        # print(f"graph out: {graph_out.shape}")
-        occ = graph_out.view(len(nodes), 1, occ_origin.shape[2], occ_origin.shape[3])
+        occ = None
+        if self.is_graph:
+            edges = x[f"neighbors"].to(device)
+            # print(f"occ orig: {occ_origin.shape}")
+            nodes = torch.flatten(occ_t, start_dim=1).view(occ_origin.shape[0], -1, 1)
+            # print(f"nodes: {nodes.shape}, edges: {edges.shape}")
+            data_list = [Data(nodes[i], edges[i]) for i in range(len(nodes))]
+            loader = DataLoader(data_list, batch_size=len(nodes))
+            graph_out = None
+            for i, data in enumerate(loader):
+                # print(data.x.shape)
+                graph_out = self.gcn(data.x, data.edge_index)
+            # print(f"graph out: {graph_out.shape}")
+            occ = graph_out.view(len(nodes), 1, occ_origin.shape[2], occ_origin.shape[3])
+        else:
+            occ = occ_t
         detect = self.detect_features_encoder(detect)
         cat = detect * occ
         out = self.sigmoid(self.conv2d(cat))

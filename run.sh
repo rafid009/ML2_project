@@ -14,4 +14,10 @@ module load cuda/11.3 gcc/9.3
 export PYTHON=/nfs/hpc/share/islammoh/miniconda3/envs/gnn/bin/python3.9 # give your environments path
 
 # run my job (e.g. matlab, python)
-$PYTHON main.py
+if [[ -z "$1" ]]
+then
+    $PYTHON main.py 'graph'
+else
+    $PYTHON main.py $1
+fi
+
