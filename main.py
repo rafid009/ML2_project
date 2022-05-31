@@ -1,7 +1,7 @@
 from turtle import color
 from torch.utils.data import Subset
 from sklearn.model_selection import train_test_split
-from data_module.bird_species_distribution import BirdSpeciesDataset
+from data_module.SDM_model import SpeciesDataset
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
@@ -42,7 +42,7 @@ n_epoch = 40
 model_path = '../saved_bird_models_new'
 if not os.path.isdir(model_path):
     os.makedirs(model_path)
-dataset = BirdSpeciesDataset(data_root, tile_size)
+dataset = SpeciesDataset(data_root, tile_size)
 datasets = train_val_test_dataset(dataset)
 
 dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) for x in ['train','val', 'test']}

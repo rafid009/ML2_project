@@ -1,5 +1,5 @@
 import torch
-from data_module.bird_species_distribution import BirdSpeciesDataset
+from data_module.SDM_model import SpeciesDataset
 from torch.utils.data import DataLoader
 from torch.utils.data import Subset
 from sklearn.model_selection import train_test_split
@@ -17,7 +17,7 @@ def train_val_test_dataset(dataset, val_split=0.20, test_split=0.20):
 
 tile_size = 64
 data_root = '../bird_data'
-dataset = BirdSpeciesDataset(data_root, tile_size)
+dataset = SpeciesDataset(data_root, tile_size)
 
 datasets = train_val_test_dataset(dataset)
 
