@@ -14,12 +14,15 @@ def process_raw_data(root, processed_dir, out_path):
     'detection_features': [f'{root}/detection_features_v1_64.npy', f'{root}/detection_features_v2_64.npy', 
                             f'{root}/detection_features_v3_64.npy', f'{root}/detection_features_v4_64.npy', 
                             f'{root}/detection_features_v5_64.npy'],
+    'occupancy_label': f'{root}/occupancy_true_64.npy',
     'detection_label': f'{root}/detection_60_64.npy'
     }
-    processed_data_dict = {'occupancy_features': [], 'detection_features': [], 'detection_label': []}
+    processed_data_dict = {'occupancy_features': [], 'detection_features': [], 'detection_label': [], 'occupancy_label': []}
     occ_features = np.load(data_files_dict['occupancy_features'])
     detect_visits = []
     label = np.load(data_files_dict['detection_label'])
+    occ_label = np.load(data_files_dict['occupancy_label'])
+
     print(f'label: {label.shape}')
     
     for d in data_files_dict['detection_features']:
@@ -37,9 +40,11 @@ def process_raw_data(root, processed_dir, out_path):
         np.save(f"{processed_dir}/occ-feat-{i}.npy", occ_features[i])
         np.save(f"{processed_dir}/detect-label-{i}.npy", label[i])
         np.save(f"{processed_dir}/detect-fetures-{i}.npy", detect_features[i])
+        np.save(f"{processed_dir}/occ-true-{i}.npy", occ_label[i]) 
         processed_data_dict['occupancy_features'].append(f"{processed_dir}/occ-feat-{i}.npy")
         processed_data_dict['detection_features'].append(f"{processed_dir}/detect-fetures-{i}.npy")
         processed_data_dict['detection_label'].append(f"{processed_dir}/detect-label-{i}.npy")
+        processed_data_dict['occupancy_label'].append(f"{processed_dir}/occ-true-{i}.npy")
     
     with open(out_path, 'w') as out:
         json.dump(processed_data_dict, out)
@@ -72,7 +77,8 @@ class BirdSpeciesDataset(Dataset):
         sample = {}
         sample['occupancy_feature'] = torch.tensor(np.load(self.processed_meta_data['occupancy_features'][idx]), dtype=torch.float32)
         d_feats = torch.tensor(np.load(self.processed_meta_data['detection_features'][idx]), dtype=torch.float32)
-        detections = torch.tensor(np.load(self.processed_meta_data['detection_label'][idx]), dtype=torch.float32)  
+        detections = torch.tensor(np.load(self.processed_meta_data['detection_label'][idx]), dtype=torch.float32)
+        sample['occupancy_label'] = torch.tensor(np.load(self.processed_meta_data['occupancy_label'][idx]), dtype=torch.float32)  
         for v in range(self.n_visits):
             sample[f'detection_feature_{v}'] = d_feats[v]
             sample[f'detection_{v}'] = detections[v]
