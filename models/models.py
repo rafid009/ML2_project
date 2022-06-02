@@ -98,6 +98,7 @@ class OccupancyDetectionModel(nn.Module):
         self.detect_features_encoder = DetectionEncoderCNN(detect_in_channel, out_channel)
         self.conv2d = nn.Conv2d(out_channel, out_channel, 3, padding='same')
         self.sigmoid = nn.Sigmoid()
+        self.occ_sigmoid = nn.Sigmoid()
         self.is_graph = is_graph
         if self.is_graph:
             self.gcn = GCNConv(1, 1, improved=True)
@@ -121,6 +122,7 @@ class OccupancyDetectionModel(nn.Module):
                 graph_out = self.gcn(data.x, data.edge_index)
             # print(f"graph out: {graph_out.shape}")
             occ = graph_out.view(len(nodes), 1, occ_origin.shape[2], occ_origin.shape[3])
+            occ = self.occ_sigmoid(occ)
         else:
             occ = occ_t
         print(f"occ: {occ}")
