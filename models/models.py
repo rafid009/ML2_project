@@ -125,7 +125,7 @@ class OccupancyDetectionModel(nn.Module):
             occ = self.occ_sigmoid(occ)
         else:
             occ = occ_t
-        print(f"occ: {occ}")
+        # print(f"occ: {occ}")
         detect = self.detect_features_encoder(detect)
         cat = detect * occ
         out = self.sigmoid(self.conv2d(cat))
