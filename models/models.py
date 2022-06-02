@@ -123,6 +123,7 @@ class OccupancyDetectionModel(nn.Module):
             occ = graph_out.view(len(nodes), 1, occ_origin.shape[2], occ_origin.shape[3])
         else:
             occ = occ_t
+        print(f"occ: {occ}")
         detect = self.detect_features_encoder(detect)
         cat = detect * occ
         out = self.sigmoid(self.conv2d(cat))
