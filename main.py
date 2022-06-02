@@ -39,7 +39,7 @@ batch_size = 32
 occ_features = 5
 detect_features = 3
 n_epoch = 40
-model_path = '../sdm_models'
+model_path = '../sdm_models_debug'
 if not os.path.isdir(model_path):
     os.makedirs(model_path)
 dataset = SpeciesDataset(data_root, tile_size)
@@ -71,10 +71,14 @@ def get_visit_likelihood(d, y):
 
 def get_avg_visit_loss(occ, likelihood, K_y):
     l = occ * likelihood + (1 - occ) * K_y
+    print(f"l: {l}")
     l = torch.flatten(l, start_dim=1) + EPSILON
     ll = torch.log(l)
+    print(f"ll: {ll}")
     nll = -1.0 * torch.mean(ll, dim=1)
+    print(f"nll: {nll}")
     loss = torch.mean(nll)
+    print(f"loss: {loss}")
     return loss
 
 def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
@@ -104,8 +108,9 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                     target = data[f'detection_{v}'].to(device)
                     with torch.no_grad():
                         bernouli_l, masked_y = get_visit_likelihood(detect, target)
+                        print(f"bernouli: {bernouli_l}")
                         likelihood_loss = likelihood_loss * bernouli_l
-                        bernouli_l.detach()
+                        print(f"likeli: {likelihood_loss}")
                         K_y = torch.max(K_y, masked_y)
                 with torch.no_grad():
                     K_y = 1 - K_y
@@ -121,7 +126,7 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                 total_val += val_loss
                 count += 1
                 tepoch.update(1)
-                # exit(0)
+                exit(0)
             result_dict['train'].append(total_train/count)
             result_dict['val'].append(total_val/count)
         if epoch % 5 == 0:
