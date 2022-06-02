@@ -119,7 +119,8 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                 loss.backward()
                 optimizer.step()
                 with torch.no_grad():
-                    val_loss, auc_i = evaluate(val_loader)
+                    #val_loss, auc_i = evaluate(val_loader)
+                    val_loss = evaluate(val_loader)
 
                 tepoch.set_postfix(train_loss=loss.item(), val_loss=val_loss)
                 total_train += loss.item()
@@ -194,14 +195,14 @@ def evaluate(val_loader, n_visits=5):
     total_loss = 0
     count = 0
     model.eval()
-    auroc_occ_dict = {}
-    auprc_occ_dict = {}
-    auroc_det_dict = {}
-    auprc_det_dict = {}
+    #auroc_occ_dict = {}
+    #auprc_occ_dict = {}
+    #auroc_det_dict = {}
+    #auprc_det_dict = {}
     for idx, data in enumerate(val_loader):
         avg_loss = 0
-        avg_auroc_v = 0
-        avg_auprc_v = 0
+      #  avg_auroc_v = 0
+       # avg_auprc_v = 0
         b_size = min(batch_size, len(data['occupancy_feature']))
         likelihood_loss = torch.ones((b_size, tile_size, tile_size)).to(device)
         occ = None
@@ -217,45 +218,47 @@ def evaluate(val_loader, n_visits=5):
             # print(f"det: {detect.shape}, targ: {target.shape}, bernou: {bernouli_l.shape}, likeli: {likelihood_loss.shape}")
             likelihood_loss = likelihood_loss * bernouli_l
             
-            output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
-            target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
+        #    output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
+        #    target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
         
-            det_metrics = get_metrics(target, output)
+        #    det_metrics = get_metrics(target, output)
         
-            if(det_metrics != -1):
-                avg_auroc_v += det_metrics['AUROC'] 
-                avg_auprc_v += det_metrics['AUPRC']
+        #    if(det_metrics != -1):
+        #        avg_auroc_v += det_metrics['AUROC'] 
+        #        avg_auprc_v += det_metrics['AUPRC']
         
             K_y = torch.max(K_y, masked_y)
      
-        occ_np = torch.flatten(occ, start_dim=1).cpu().detach().numpy()
-        occ_target = torch.flatten(occ_target, start_dim=1).cpu().detach().numpy()
+        #occ_np = torch.flatten(occ, start_dim=1).cpu().detach().numpy()
+        #occ_target = torch.flatten(occ_target, start_dim=1).cpu().detach().numpy()
     
-        occ_metrics = get_metrics(occ_target, occ_np)
+        #occ_metrics = get_metrics(occ_target, occ_np)
         
-        if(occ_metrics != -1):
-            auroc_occ_dict[idx] = occ_metrics['AUROC']
-            auprc_occ_dict[idx] = occ_metrics['AUPRC']
+        #if(occ_metrics != -1):
+        #    auroc_occ_dict[idx] = occ_metrics['AUROC']
+        #    auprc_occ_dict[idx] = occ_metrics['AUPRC']
 
         K_y = 1 - K_y
     
-        avg_auroc_v = avg_auroc_v/n_visits
-        avg_auprc_v = avg_auprc_v/n_visits
+        #avg_auroc_v = avg_auroc_v/n_visits
+        #avg_auprc_v = avg_auprc_v/n_visits
 
-        auroc_det_dict[idx] = avg_auroc_v
-        auprc_det_dict[idx] = avg_auprc_v
+        #auroc_det_dict[idx] = avg_auroc_v
+        #auprc_det_dict[idx] = avg_auprc_v
 
         loss = get_avg_visit_loss(occ, likelihood_loss, K_y)
         total_loss += (loss / n_visits)
         count += 1
 
-    auc_dict = {'OCC-AUROC': auroc_occ_dict,
-        'OCC-AUPRC': auprc_occ_dict, 
-        'DET-AUROC': auroc_det_dict,
-        'DET-AUPRC': auprc_det_dict
-    }
+    #auc_dict = {'OCC-AUROC': auroc_occ_dict,
+    #    'OCC-AUPRC': auprc_occ_dict, 
+    #    'DET-AUROC': auroc_det_dict,
+    #    'DET-AUPRC': auprc_det_dict
+    #}
     model.train()
-    return total_loss.item() / count, auc_dict
+#    return total_loss.item() / count, auc_dict
+    return total_loss.item() / count
+
 
 def test(test_loader, n_visits=5):
     model.eval()
