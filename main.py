@@ -312,7 +312,7 @@ def test(test_loader, n_visits=5):
                 'DET-AUROC': auroc_det_dict,
                 'DET-AUPRC': auprc_det_dict
         }
-    model.train()
+    # model.train()
     return auc_dict
 
 def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
@@ -330,7 +330,7 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
     plt.close()
 
 
-lrs = [0.001, 0.00099, 0.01]#[0.01, 0.001, 0.1, 0.05]
+lrs = [0.001, 0.01, 0.00099]#[0.01, 0.001, 0.1, 0.05]
 plots_folder = '../SDM_plots_2'
 
 if not os.path.isdir(plots_folder):
