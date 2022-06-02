@@ -71,7 +71,7 @@ def get_visit_likelihood(d, y):
 
 def get_avg_visit_loss(occ, likelihood, K_y):
     l = occ * likelihood + (1 - occ) * K_y
-    print(f"l: {l}\nnan: {torch.isnan(l).sum()}\nshape: {l.shape}")
+    # print(f"l: {l}\nnan: {torch.isnan(l).sum()}\nshape: {l.shape}")
     l = torch.flatten(l, start_dim=1) + EPSILON
     ll = torch.log(l)
     print(f"ll: {ll}\nnan: {torch.isnan(ll).sum()}\nshape: {ll.shape}")
@@ -108,9 +108,9 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                     target = data[f'detection_{v}'].to(device)
                     with torch.no_grad():
                         bernouli_l, masked_y = get_visit_likelihood(detect, target)
-                        print(f"bernouli: {bernouli_l}")
+                        # print(f"bernouli: {bernouli_l}")
                         likelihood_loss = likelihood_loss * bernouli_l
-                        print(f"likeli: {likelihood_loss}")
+                        # print(f"likeli: {likelihood_loss}")
                         K_y = torch.max(K_y, masked_y)
                 with torch.no_grad():
                     K_y = 1 - K_y
@@ -328,7 +328,7 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
 
 
 lrs = [0.001, 0.00099, 0.01]#[0.01, 0.001, 0.1, 0.05]
-plots_folder = '../SDM_plots'
+plots_folder = '../SDM_plots_2'
 
 if not os.path.isdir(plots_folder):
     os.makedirs(plots_folder)
