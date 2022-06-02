@@ -126,7 +126,7 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
                 total_val += val_loss
                 count += 1
                 tepoch.update(1)
-                exit(0)
+                # exit(0)
             result_dict['train'].append(total_train/count)
             result_dict['val'].append(total_val/count)
         if epoch % 5 == 0:
