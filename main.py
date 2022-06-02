@@ -330,7 +330,7 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
     plt.close()
 
 
-lrs = [0.001, 0.01, 0.00099]#[0.01, 0.001, 0.1, 0.05]
+lrs = [0.001, 0.01]#, 0.00099]#[0.01, 0.001, 0.1, 0.05]
 plots_folder = '../SDM_plots_2'
 
 if not os.path.isdir(plots_folder):
