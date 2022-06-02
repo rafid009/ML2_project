@@ -71,10 +71,10 @@ def get_visit_likelihood(d, y):
 
 def get_avg_visit_loss(occ, likelihood, K_y):
     l = occ * likelihood + (1 - occ) * K_y
-    print(f"l: {l}")
+    print(f"l: {l}\nnan: {torch.isnan(l)}\nshape: {l.shape}")
     l = torch.flatten(l, start_dim=1) + EPSILON
     ll = torch.log(l)
-    print(f"ll: {ll}")
+    print(f"ll: {ll}\nnan: {torch.isnan(ll)}\nshape: {ll.shape}")
     nll = -1.0 * torch.mean(ll, dim=1)
     print(f"nll: {nll}")
     loss = torch.mean(nll)
