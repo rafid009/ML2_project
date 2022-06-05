@@ -7,7 +7,7 @@ from torchfcn.models.fcn8s import FCN8s
 import torchvision.models as models
 from torch_geometric.data import Data
 
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv, SAGEConv
 from torch_geometric.loader import DataLoader
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -101,7 +101,7 @@ class OccupancyDetectionModel(nn.Module):
         self.occ_sigmoid = nn.Sigmoid()
         self.is_graph = is_graph
         if self.is_graph:
-            self.gcn = GCNConv(1, 1, improved=True)
+            self.gcn = SAGEConv(1, 1, aggr='add')
         
     def forward(self, x, visit):
         occ_origin = x['occupancy_feature'].to(device)
@@ -129,4 +129,4 @@ class OccupancyDetectionModel(nn.Module):
         detect = self.detect_features_encoder(detect)
         cat = detect * occ
         out = self.sigmoid(self.conv2d(cat))
-        return torch.squeeze(out), occ, detect
+        return torch.squeeze(out), occ_t, detect
