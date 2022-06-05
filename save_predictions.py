@@ -155,22 +155,20 @@ batch_size = 32
 occ_features = 5
 detect_features = 3
 n_epoch = 40
-model_path = '../sdm_models_debug/'
+model_path = sys.argv[2]
 
-if not os.path.isdir(model_path):
-    os.makedirs(model_path)
 dataset = SpeciesDataset(data_root, tile_size)
 datasets = train_val_test_dataset(dataset)
  
 dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) for x in ['train','val', 'test']}
-model_filename = sys.argv[2]
+model_filename = model_path.split('/')[-1]
 if sys.argv[1] == 'graph':
     model = OccupancyDetectionModel(occ_features, detect_features, 1, is_graph=True).float()
 else:
     model = OccupancyDetectionModel(occ_features, detect_features, 1, is_graph=False).float()
 model = model.to(device)
 
-model.load_state_dict(torch.load(model_path+model_filename, map_location=torch.device(device)))
+model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
  
 model.eval()
 

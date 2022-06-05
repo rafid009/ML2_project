@@ -38,8 +38,8 @@ data_root = '../sdm_data'
 batch_size = 32
 occ_features = 5
 detect_features = 3
-n_epoch = 40
-model_path = '../sdm_models_debug'
+n_epoch = 20
+model_path = '../sdm_models_sage_occt'
 if not os.path.isdir(model_path):
     os.makedirs(model_path)
 dataset = SpeciesDataset(data_root, tile_size)
@@ -74,14 +74,11 @@ def get_avg_visit_loss(occ, likelihood, K_y):
     # print(f"l: {l}\nnan: {torch.isnan(l).sum()}\nshape: {l.shape}")
     l = torch.flatten(l, start_dim=1) + EPSILON
     ll = torch.log(l)
-    print(f"ll: {ll}\nnan: {torch.isnan(ll).sum()}\nshape: {ll.shape}")
     nll = -1.0 * torch.mean(ll, dim=1)
-    print(f"nll: {nll}")
     loss = torch.mean(nll)
-    print(f"loss: {loss}")
     return loss
 
-def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
+def train(train_loader, val_loader, n_epoch, eval_path, lr, n_visits=5):
     result_dict = {'train': [], 'val': []}
     model.train()
     auc_dict = {}
@@ -133,7 +130,7 @@ def train(train_loader, val_loader, n_epoch, eval_path, n_visits=5):
         if epoch % 5 == 0:
             if not os.path.isdir(model_path):
                 os.makedirs(model_path)
-            torch.save(model.state_dict(), f"{model_path}/model-e{epoch}-l({np.round(val_loss, 5)}).pth")
+            torch.save(model.state_dict(), f"{model_path}/model-e{epoch}-{lr}-{np.round(val_loss, 5)}.pth")
     df = pd.DataFrame(result_dict)
     df.to_csv(eval_path, index=False)
 
@@ -321,24 +318,24 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
     plt.title(f"Training vs validation cross entropy loss for lr={lr}", fontsize=20)
     plt.plot(epochs, train_losses, color='tab:red', label='Validation loss')
     plt.plot(epochs, val_losses, color='tab:orange', label='Training loss')
-    plt.xticks(fontsize=16)
-    plt.yticks(fontsize=16)
-    plt.xlabel('Number of epochs', fontsize=16)
-    plt.ylabel('Cross entropy loss', fontsize=16)
-    plt.legend(fontsize=16)
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)
+    plt.xlabel('Number of epochs', fontsize=18)
+    plt.ylabel('Cross entropy loss', fontsize=18)
+    plt.legend(fontsize=18)
     plt.savefig(f"{plots_folder}/train-vs-val-plot-lr({lr}).png", dpi=300)
     plt.close()
 
 
-lrs = [0.001, 0.01, 0.00099]#[0.01, 0.001, 0.1, 0.05]
-plots_folder = '../SDM_plots_2'
+lrs = [0.001]#[0.01, 0.001, 0.1, 0.05]
+plots_folder = '../SDM_plots_sage_occt'
 
 if not os.path.isdir(plots_folder):
     os.makedirs(plots_folder)
 for lr in lrs:
     optimizer = optim.Adam(model.parameters(), lr=lr)
     plot_file = f"{plots_folder}/train-vs-valid-{lr}.csv"
-    train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file)
+    train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file, lr)
     df = pd.read_csv(plot_file)
     plot_loss(n_epoch, df['train'], df['val'], lr, plots_folder)
     aucs = test(dataloaders['test'])
