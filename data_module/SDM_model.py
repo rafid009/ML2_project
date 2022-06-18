@@ -2,6 +2,7 @@ import os
 import os.path as osp
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import StandardScaler
 from torch.utils.data import Dataset
 import json
 import torch
@@ -36,7 +37,7 @@ def process_raw_data(root, processed_dir, out_path, k=3):
         if np.sum(np.isnan(occ_features[i])) > 0:
             occ_features[i] = np.nan_to_num(occ_features[i])
         if np.sum(np.isnan(detect_features[i])) > 0:
-            detect_features[i] = np.nan_to_num(detect_features[i])
+            detect_features[i] = np.nan_to_num(detect_features[i], nan=-1)
         neighbors = save_k_neighbors(torch.tensor(occ_features[i], dtype=torch.float32), k)
         np.save(f"{processed_dir}/neighbors_{i}.npy", neighbors)
         np.save(f"{processed_dir}/occ-feat-{i}.npy", occ_features[i])
@@ -62,8 +63,10 @@ def save_k_neighbors(occ_f, k):
     occ = torch.cat([occ_f, pos], axis=0)
     occ = torch.permute(occ, (1,2,0))
     occ = occ.flatten(start_dim=0, end_dim=1)
+    occ_normalizer = StandardScaler()
+    occ_norm = occ_normalizer.fit_transform(occ)
     knn = NearestNeighbors(n_neighbors=k)
-    knn.fit(occ)
+    knn.fit(occ_norm)
     neighbor_edges = [[],[]]
     for i in range(len(occ)):
         occ_data = torch.unsqueeze(occ[i], dim=0)
@@ -78,7 +81,6 @@ def save_k_neighbors(occ_f, k):
             neighbor_edges[1].append(i)
     # print(f"neighbor len: {len(neighbor_edges)}, n[0]: {len(neighbor_edges[0])}, n[1]: {len(neighbor_edges[1])}")
     nei = np.array(neighbor_edges)
-    # print(f"{nei}\n{nei.shape}")
     return nei
 
 class SpeciesDataset(Dataset):

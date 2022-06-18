@@ -71,7 +71,6 @@ def get_visit_likelihood(d, y):
 
 def get_avg_visit_loss(occ, likelihood, K_y):
     l = occ * likelihood + (1 - occ) * K_y
-    # print(f"l: {l}\nnan: {torch.isnan(l).sum()}\nshape: {l.shape}")
     l = torch.flatten(l, start_dim=1) + EPSILON
     ll = torch.log(l)
     nll = -1.0 * torch.mean(ll, dim=1)
@@ -214,26 +213,10 @@ def evaluate(val_loader, n_visits=5):
             bernouli_l, masked_y = get_visit_likelihood(detect, target)
             # print(f"det: {detect.shape}, targ: {target.shape}, bernou: {bernouli_l.shape}, likeli: {likelihood_loss.shape}")
             likelihood_loss = likelihood_loss * bernouli_l
-            
-        #    output = torch.flatten(output, start_dim=1).cpu().detach().numpy()
-        #    target = torch.flatten(target, start_dim=1).cpu().detach().numpy()
-        
-        #    det_metrics = get_metrics(target, output)
-        
-        #    if(det_metrics != -1):
-        #        avg_auroc_v += det_metrics['AUROC'] 
-        #        avg_auprc_v += det_metrics['AUPRC']
+
         
             K_y = torch.max(K_y, masked_y)
      
-        #occ_np = torch.flatten(occ, start_dim=1).cpu().detach().numpy()
-        #occ_target = torch.flatten(occ_target, start_dim=1).cpu().detach().numpy()
-    
-        #occ_metrics = get_metrics(occ_target, occ_np)
-        
-        #if(occ_metrics != -1):
-        #    auroc_occ_dict[idx] = occ_metrics['AUROC']
-        #    auprc_occ_dict[idx] = occ_metrics['AUPRC']
 
         K_y = 1 - K_y
     
@@ -247,13 +230,7 @@ def evaluate(val_loader, n_visits=5):
         total_loss += (loss / n_visits)
         count += 1
 
-    #auc_dict = {'OCC-AUROC': auroc_occ_dict,
-    #    'OCC-AUPRC': auprc_occ_dict, 
-    #    'DET-AUROC': auroc_det_dict,
-    #    'DET-AUPRC': auprc_det_dict
-    #}
     model.train()
-#    return total_loss.item() / count, auc_dict
     return total_loss.item() / count
 
 

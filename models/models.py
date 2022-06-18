@@ -7,7 +7,7 @@ from torchfcn.models.fcn8s import FCN8s
 import torchvision.models as models
 from torch_geometric.data import Data
 
-from torch_geometric.nn import GCNConv, SAGEConv
+from torch_geometric.nn import GCNConv, SAGEConv, GATConv, GATv2Conv, SuperGATConv
 from torch_geometric.loader import DataLoader
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -92,16 +92,29 @@ class DetectionEncoderCNN(nn.Module):
         return self.sigmoid(self.fcn(x))#self.fcn(x) 
 
 class OccupancyDetectionModel(nn.Module):
-    def __init__(self, occ_in_channel, detect_in_channel, out_channel, is_graph=True):
+    def __init__(self, occ_in_channel, detect_in_channel, out_channel, graph_type=None):
         super(OccupancyDetectionModel, self).__init__()
         self.occ_features_encoder = OccupancyEncoderCNN(occ_in_channel, out_channel)
         self.detect_features_encoder = DetectionEncoderCNN(detect_in_channel, out_channel)
         self.conv2d = nn.Conv2d(out_channel, out_channel, 3, padding='same')
         self.sigmoid = nn.Sigmoid()
         self.occ_sigmoid = nn.Sigmoid()
-        self.is_graph = is_graph
-        if self.is_graph:
-            self.gcn = SAGEConv(1, 1, aggr='add')
+        # self.is_graph = is_graph
+        self.graph_type = graph_type
+        if self.graph_type is not None:
+            if self.graph_type == 'gcn':
+                self.gcn = GCNConv(1, 1, improved=True)
+            elif self.graph_type == 'sage':
+                self.gcn = SAGEConv(1, 1, aggr='max')
+            elif self.graph_type == 'gat':
+                self.gcn = GATConv(1, 1, heads=4, dropout=0.2)
+            elif self.graph_type == 'gat2':
+                self.gcn = GATv2Conv(1, 1, heads=4, dropout=0.2)
+            elif self.graph_type == 'supgat':
+                self.gcn = SuperGATConv(1, 1, heads=4, dropout=0.2)
+            else:
+                self.gcn = None
+            
         
     def forward(self, x, visit):
         occ_origin = x['occupancy_feature'].to(device)
@@ -109,7 +122,7 @@ class OccupancyDetectionModel(nn.Module):
         
         occ_t = self.occ_features_encoder(occ_origin)
         occ = None
-        if self.is_graph:
+        if self.graph_type is not None:
             edges = x[f"neighbors"].to(device)
             # print(f"occ orig: {occ_origin.shape}")
             nodes = torch.flatten(occ_t, start_dim=1).view(occ_origin.shape[0], -1, 1)
