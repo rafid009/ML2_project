@@ -39,19 +39,13 @@ batch_size = 32
 occ_features = 5
 detect_features = 3
 n_epoch = 20
-model_path = '../sdm_models_sage_occt'
+model_path = '../sdm_models_occt'
 if not os.path.isdir(model_path):
     os.makedirs(model_path)
 dataset = SpeciesDataset(data_root, tile_size)
 datasets = train_val_test_dataset(dataset)
 
 dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) for x in ['train','val', 'test']}
-
-if sys.argv[1] == 'graph':
-    model = OccupancyDetectionModel(occ_features, detect_features, 1, is_graph=True).float()
-else:
-    model = OccupancyDetectionModel(occ_features, detect_features, 1, is_graph=False).float()
-model = model.to(device)
 
 
 def mask_out_nan(output, target):
@@ -314,6 +308,11 @@ if not os.path.isdir(plots_folder):
     os.makedirs(plots_folder)
 for lr in lrs:
     for g in graphs:
+        if g != 'none':
+            model = OccupancyDetectionModel(occ_features, detect_features, 1, graph_type=g).float()
+        else:
+            model = OccupancyDetectionModel(occ_features, detect_features, 1).float()
+        model = model.to(device)
         optimizer = optim.Adam(model.parameters(), lr=lr)
         plot_file = f"{plots_folder}/{g}-train-vs-valid-{lr}.csv"
         if g != 'none':
