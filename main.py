@@ -77,7 +77,7 @@ def get_avg_visit_loss(occ, likelihood, K_y):
     loss = torch.mean(nll)
     return loss
 
-def train(train_loader, val_loader, n_epoch, eval_path, lr, n_visits=5):
+def train(train_loader, val_loader, n_epoch, eval_path, lr, graph=None, n_visits=5):
     result_dict = {'train': [], 'val': []}
     model.train()
     auc_dict = {}
@@ -87,8 +87,6 @@ def train(train_loader, val_loader, n_epoch, eval_path, lr, n_visits=5):
             total_train = 0
             total_val = 0
             count = 0
-            avg_visit_loss = 0
-            avg_auc = 0
             for data in train_loader:
                 optimizer.zero_grad()
                 
@@ -127,9 +125,13 @@ def train(train_loader, val_loader, n_epoch, eval_path, lr, n_visits=5):
             result_dict['train'].append(total_train/count)
             result_dict['val'].append(total_val/count)
         if epoch % 5 == 0:
-            if not os.path.isdir(model_path):
-                os.makedirs(model_path)
-            torch.save(model.state_dict(), f"{model_path}/model-e{epoch}-{lr}-{np.round(val_loss, 5)}.pth")
+            graph_dir = f'{model_path}/{graph}'
+            if not os.path.isdir(graph_dir):
+                os.makedirs(graph_dir)
+            graph_dir = f'{graph_dir}/{lr}'
+            if not os.path.isdir(graph_dir):
+                os.makedirs(graph_dir)
+            torch.save(model.state_dict(), f"{graph_dir}/model-{graph}-e{epoch}-{lr}-{np.round(val_loss, 5)}.pth")
     df = pd.DataFrame(result_dict)
     df.to_csv(eval_path, index=False)
 
@@ -306,16 +308,21 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
 
 lrs = [0.001]#[0.01, 0.001, 0.1, 0.05]
 plots_folder = '../SDM_plots_sage_occt'
+graphs = ['gcn', 'sage', 'gat', 'gat2', 'supgat', 'none']
 
 if not os.path.isdir(plots_folder):
     os.makedirs(plots_folder)
 for lr in lrs:
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    plot_file = f"{plots_folder}/train-vs-valid-{lr}.csv"
-    train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file, lr)
-    df = pd.read_csv(plot_file)
-    plot_loss(n_epoch, df['train'], df['val'], lr, plots_folder)
-    aucs = test(dataloaders['test'])
+    for g in graphs:
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+        plot_file = f"{plots_folder}/{g}-train-vs-valid-{lr}.csv"
+        if g != 'none':
+            train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file, lr, graph=g)
+        else:
+            train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file, lr)
+        df = pd.read_csv(plot_file)
+        plot_loss(n_epoch, df['train'], df['val'], lr, plots_folder)
+        aucs = test(dataloaders['test'])
 
-    with open(f"{plots_folder}/auc-test-{lr}.json", "w") as outfile:
-        json.dump(aucs, outfile)
+        with open(f"{plots_folder}/{g}-auc-test-{lr}.json", "w") as outfile:
+            json.dump(aucs, outfile)
