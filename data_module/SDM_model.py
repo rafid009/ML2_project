@@ -79,7 +79,7 @@ def save_k_neighbors(occ_f, k):
             neighbor_edges[1].append(n)
             neighbor_edges[0].append(n)
             neighbor_edges[1].append(i)
-    # print(f"neighbor len: {len(neighbor_edges)}, n[0]: {len(neighbor_edges[0])}, n[1]: {len(neighbor_edges[1])}")
+    print(f"neighbor len: {len(neighbor_edges)}, n[0]: {len(neighbor_edges[0])}, n[1]: {len(neighbor_edges[1])}")
     nei = np.array(neighbor_edges)
     return nei
 

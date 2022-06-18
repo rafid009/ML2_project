@@ -107,11 +107,11 @@ class OccupancyDetectionModel(nn.Module):
             elif self.graph_type == 'sage':
                 self.gcn = SAGEConv(1, 1, aggr='max')
             elif self.graph_type == 'gat':
-                self.gcn = GATConv(1, 1, heads=4, dropout=0.2)
+                self.gcn = GATConv(1, 1, heads=1, dropout=0.2)
             elif self.graph_type == 'gat2':
-                self.gcn = GATv2Conv(1, 1, heads=4, dropout=0.2)
+                self.gcn = GATv2Conv(1, 1, heads=1, dropout=0.2)
             elif self.graph_type == 'supgat':
-                self.gcn = SuperGATConv(1, 1, heads=4, dropout=0.2)
+                self.gcn = SuperGATConv(1, 1, heads=1, dropout=0.2)
             else:
                 self.gcn = None
             
