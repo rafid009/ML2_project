@@ -42,10 +42,6 @@ n_epoch = 20
 model_path = '../sdm_models_occt'
 if not os.path.isdir(model_path):
     os.makedirs(model_path)
-dataset = SpeciesDataset(data_root, tile_size)
-datasets = train_val_test_dataset(dataset)
-
-dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) for x in ['train','val', 'test']}
 
 
 def mask_out_nan(output, target):
@@ -152,27 +148,27 @@ def get_metrics (y_true, y_score):
     nan_indices_score = np.argwhere(np.isnan(y_score))
     
     
-    print (nan_indices_true, nan_indices_score )
+    # print (nan_indices_true, nan_indices_score )
 
     nan_indices = np.unique(np.concatenate((nan_indices_true, nan_indices_score)))
 
     #if(not np.any(nan_indices)): 
     #if NaNs are present they will be deleted, else the arrays will be unchanged
     
-    print(y_true.shape, y_score.shape)
-    print(y_true, y_score)
+    # print(y_true.shape, y_score.shape)
+    # print(y_true, y_score)
     y_true = np.delete(y_true, nan_indices)
     y_score = np.delete(y_score, nan_indices)
-    print(y_true.shape, y_score.shape)
-    print(y_true, y_score)
+    # print(y_true.shape, y_score.shape)
+    # print(y_true, y_score)
 
 
     # Check if only one class is present in class labels then scores are undefined 
     #   (we can only calculate tile-wise AUCs for tiles with atleast 1 pixel of each class in true label)
     #   if AUC is undefined skip tile and return -1 to indicate so
     
-    print(nan_indices)
-    print(np.unique(y_true))
+    # print(nan_indices)
+    # print(np.unique(y_true))
     if(np.unique(y_true).shape[0]==1):
         return -1
 
@@ -306,7 +302,14 @@ Ks = [3,5]
 
 for lr in lrs:
     for k in Ks:
+        dataset = SpeciesDataset(data_root, tile_size, k=k, reload=True)
+        datasets = train_val_test_dataset(dataset)
+
+        dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) for x in ['train','val', 'test']}
+
+        print(f"For k = {k}")
         for g in graphs:
+            print(f"\tFor graph = {g}")
             plots_folder = f'../SDM_plots_occt/{k}'
             if not os.path.isdir(plots_folder):
                 os.makedirs(plots_folder)

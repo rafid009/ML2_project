@@ -84,7 +84,7 @@ def save_k_neighbors(occ_f, k):
     return nei
 
 class SpeciesDataset(Dataset):
-    def __init__(self, data_root, tile_size, n_visits=5, k=3): 
+    def __init__(self, data_root, tile_size, n_visits=5, k=3, reload=False): 
         self.tile_size = tile_size
         self.data_root = f"{data_root}/T{tile_size}"
         self.processed_meta_data = None
@@ -92,11 +92,12 @@ class SpeciesDataset(Dataset):
         self.processed_dir = f"{self.data_root}/processed/"
         self.n_visits = n_visits
         self.k = k
+        self.reload = reload
 
-        if not osp.exists(self.processed_meta_path):
+        if self.reload or not osp.exists(self.processed_meta_path):
             if not osp.isdir(self.processed_dir):
                 os.makedirs(self.processed_dir)
-            self.processed_meta_data = process_raw_data(self.data_root, self.processed_dir, self.processed_meta_path, k)
+            self.processed_meta_data = process_raw_data(self.data_root, self.processed_dir, self.processed_meta_path, self.k)
         else:
             with open(self.processed_meta_path, 'r') as json_file:
                 self.processed_meta_data = json.load(json_file)
