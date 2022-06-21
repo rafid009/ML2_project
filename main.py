@@ -284,7 +284,7 @@ def test(test_loader, n_visits=5):
 def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder, k, graph):
     epochs = [e for e in range(1, n_epochs + 1)]
     plt.figure(figsize=(16,9))
-    plt.title(f"Training vs validation cross entropy loss for lr={lr}", fontsize=20)
+    plt.title(f"Training vs validation cross entropy loss for k={k} graph={graph} lr={lr}", fontsize=20)
     plt.plot(epochs, train_losses, color='tab:red', label='Validation loss')
     plt.plot(epochs, val_losses, color='tab:orange', label='Training loss')
     plt.xticks(fontsize=18)
