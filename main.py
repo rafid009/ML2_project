@@ -319,7 +319,7 @@ for lr in lrs:
                 model = OccupancyDetectionModel(occ_features, detect_features, 1).float()
             model = model.to(device)
             optimizer = optim.Adam(model.parameters(), lr=lr)
-            plot_file = f"{plots_folder}/{g}-train-vs-valid-{lr}.csv"
+            plot_file = f"{plots_folder}/{k}-{g}-train-vs-valid-{lr}.csv"
             if g != 'none':
                 train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file, lr, graph=g, K=k)
             else:
@@ -328,5 +328,5 @@ for lr in lrs:
             plot_loss(n_epoch, df['train'], df['val'], lr, plots_folder, k, g)
             aucs = test(dataloaders['test'])
 
-            with open(f"{plots_folder}/{g}-auc-test-{lr}.json", "w") as outfile:
+            with open(f"{plots_folder}/{k}-{g}-auc-test-{lr}.json", "w") as outfile:
                 json.dump(aucs, outfile)

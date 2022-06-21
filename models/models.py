@@ -112,8 +112,8 @@ class OccupancyDetectionModel(nn.Module):
                 self.gcn = GATv2Conv(1, 1, heads=1, dropout=0.2)
             elif self.graph_type == 'supgat':
                 self.gcn = SuperGATConv(1, 1, heads=1, dropout=0.2)
-            else:
-                self.gcn = None
+        else:
+            self.gcn = None
             
         
     def forward(self, x, visit):
