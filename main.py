@@ -281,7 +281,7 @@ def test(test_loader, n_visits=5):
     # model.train()
     return auc_dict
 
-def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
+def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder, k, graph):
     epochs = [e for e in range(1, n_epochs + 1)]
     plt.figure(figsize=(16,9))
     plt.title(f"Training vs validation cross entropy loss for lr={lr}", fontsize=20)
@@ -292,7 +292,7 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder):
     plt.xlabel('Number of epochs', fontsize=18)
     plt.ylabel('Cross entropy loss', fontsize=18)
     plt.legend(fontsize=18)
-    plt.savefig(f"{plots_folder}/train-vs-val-plot-lr({lr}).png", dpi=300)
+    plt.savefig(f"{plots_folder}/train-vs-val-plot-{k}-{graph}-lr({lr}).png", dpi=300)
     plt.close()
 
 
@@ -325,7 +325,7 @@ for lr in lrs:
             else:
                 train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file, lr, K=k)
             df = pd.read_csv(plot_file)
-            plot_loss(n_epoch, df['train'], df['val'], lr, plots_folder)
+            plot_loss(n_epoch, df['train'], df['val'], lr, plots_folder, k, g)
             aucs = test(dataloaders['test'])
 
             with open(f"{plots_folder}/{g}-auc-test-{lr}.json", "w") as outfile:
