@@ -297,7 +297,7 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder, k, graph, w_
 
 
 lrs = [0.001]#[0.01, 0.001, 0.1, 0.05]
-graphs = ['gcn', 'sage', 'gat', 'gat2', 'supgat', 'none']
+graphs = ['gat', 'gat2', 'supgat', 'none']
 Ks = [3,5]
 w_s = [0.5, 0.3, 0.5]
 w_e = [1.0, 0.7, 0.5]
@@ -312,7 +312,7 @@ for lr in lrs:
             print(f"For k = {k}")
             for g in graphs:
                 print(f"\tFor graph = {g}")
-                plots_folder = f'../SDM_plots_occt/{k}'
+                plots_folder = f'../SDM_plots_occt_w/{k}'
                 if not os.path.isdir(plots_folder):
                     os.makedirs(plots_folder)
                 if g != 'none':
