@@ -303,7 +303,7 @@ w_s = [0.5, 0.3, 0.5]
 w_e = [1.0, 0.7, 0.5]
 for lr in lrs:
     for k in Ks:
-        for i in range(w_s):
+        for i in range(len(w_s)):
             dataset = SpeciesDataset(data_root, tile_size, k=k, reload=True, w_s=w_s[i], w_e=w_e[i])
             datasets = train_val_test_dataset(dataset)
 

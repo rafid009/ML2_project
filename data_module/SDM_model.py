@@ -60,6 +60,7 @@ def save_k_neighbors(occ_f, k, w_s, w_e):
     y = torch.arange(start=0, end=occ_f.shape[1], dtype=torch.float32).view(-1, 1)
     yy = y.repeat([1, occ_f.shape[2]])
     pos = w_s * torch.stack([xx, yy], dim=0)
+    # pos = torch.stack([xx, yy], dim=0)
     occ_f = w_e * occ_f
     occ = torch.cat([occ_f, pos], axis=0)
     occ = torch.permute(occ, (1,2,0))
