@@ -10,7 +10,7 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
 
-def process_raw_data(root, processed_dir, out_path, k=3):
+def process_raw_data(root, processed_dir, out_path, k=3, w_s=0.5, w_e=1.0):
     data_files_dict = {
     'occupancy_features': f'{root}/occupancy_features_64.npy',
     'detection_features': [f'{root}/detection_features_v1_64.npy', f'{root}/detection_features_v2_64.npy', 
@@ -38,7 +38,7 @@ def process_raw_data(root, processed_dir, out_path, k=3):
             occ_features[i] = np.nan_to_num(occ_features[i])
         if np.sum(np.isnan(detect_features[i])) > 0:
             detect_features[i] = np.nan_to_num(detect_features[i], nan=-1)
-        neighbors = save_k_neighbors(torch.tensor(occ_features[i], dtype=torch.float32), k)
+        neighbors = save_k_neighbors(torch.tensor(occ_features[i], dtype=torch.float32), k, w_s, w_e)
         np.save(f"{processed_dir}/neighbors_{i}.npy", neighbors)
         np.save(f"{processed_dir}/occ-feat-{i}.npy", occ_features[i])
         np.save(f"{processed_dir}/detect-label-{i}.npy", label[i])
@@ -54,12 +54,13 @@ def process_raw_data(root, processed_dir, out_path, k=3):
         json.dump(processed_data_dict, out)
     return processed_data_dict
 
-def save_k_neighbors(occ_f, k):
+def save_k_neighbors(occ_f, k, w_s, w_e):
     x = torch.arange(start=0, end=occ_f.shape[2], dtype=torch.float32)
     xx = x.repeat([occ_f.shape[1], 1])
     y = torch.arange(start=0, end=occ_f.shape[1], dtype=torch.float32).view(-1, 1)
     yy = y.repeat([1, occ_f.shape[2]])
-    pos = torch.stack([xx, yy], dim=0)
+    pos = w_s * torch.stack([xx, yy], dim=0)
+    occ_f = w_e * occ_f
     occ = torch.cat([occ_f, pos], axis=0)
     occ = torch.permute(occ, (1,2,0))
     occ = occ.flatten(start_dim=0, end_dim=1)
@@ -84,7 +85,7 @@ def save_k_neighbors(occ_f, k):
     return nei
 
 class SpeciesDataset(Dataset):
-    def __init__(self, data_root, tile_size, n_visits=5, k=3, reload=False): 
+    def __init__(self, data_root, tile_size, n_visits=5, k=3, reload=False, w_s=0.5, w_e=1.0): 
         self.tile_size = tile_size
         self.data_root = f"{data_root}/T{tile_size}"
         self.processed_meta_data = None
@@ -97,7 +98,7 @@ class SpeciesDataset(Dataset):
         if self.reload or not osp.exists(self.processed_meta_path):
             if not osp.isdir(self.processed_dir):
                 os.makedirs(self.processed_dir)
-            self.processed_meta_data = process_raw_data(self.data_root, self.processed_dir, self.processed_meta_path, self.k)
+            self.processed_meta_data = process_raw_data(self.data_root, self.processed_dir, self.processed_meta_path, self.k, w_s, w_e)
         else:
             with open(self.processed_meta_path, 'r') as json_file:
                 self.processed_meta_data = json.load(json_file)

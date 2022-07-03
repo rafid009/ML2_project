@@ -39,7 +39,7 @@ batch_size = 32
 occ_features = 5
 detect_features = 3
 n_epoch = 20
-model_path = '../sdm_models_occt'
+model_path = '../sdm_models_occt_w'
 if not os.path.isdir(model_path):
     os.makedirs(model_path)
 
@@ -67,7 +67,7 @@ def get_avg_visit_loss(occ, likelihood, K_y):
     loss = torch.mean(nll)
     return loss
 
-def train(train_loader, val_loader, n_epoch, eval_path, lr, graph=None, n_visits=5, K=3):
+def train(train_loader, val_loader, n_epoch, eval_path, lr, graph=None, n_visits=5, K=3, w_s=0.5, w_e=1.0):
     result_dict = {'train': [], 'val': []}
     model.train()
     auc_dict = {}
@@ -121,7 +121,7 @@ def train(train_loader, val_loader, n_epoch, eval_path, lr, graph=None, n_visits
             graph_dir = f'{graph_dir}/{lr}'
             if not os.path.isdir(graph_dir):
                 os.makedirs(graph_dir)
-            torch.save(model.state_dict(), f"{graph_dir}/model-{graph}-e{epoch}-{lr}-{np.round(val_loss, 5)}.pth")
+            torch.save(model.state_dict(), f"{graph_dir}/model-{graph}-e{epoch}-{lr}-{np.round(val_loss, 5)}-{w_s}-{w_e}.pth")
     df = pd.DataFrame(result_dict)
     df.to_csv(eval_path, index=False)
 
@@ -281,7 +281,7 @@ def test(test_loader, n_visits=5):
     # model.train()
     return auc_dict
 
-def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder, k, graph):
+def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder, k, graph, w_s, w_e):
     epochs = [e for e in range(1, n_epochs + 1)]
     plt.figure(figsize=(16,9))
     plt.title(f"Training vs validation cross entropy loss for k={k} graph={graph} lr={lr}", fontsize=20)
@@ -292,41 +292,43 @@ def plot_loss(n_epochs, train_losses, val_losses, lr, plots_folder, k, graph):
     plt.xlabel('Number of epochs', fontsize=18)
     plt.ylabel('Cross entropy loss', fontsize=18)
     plt.legend(fontsize=18)
-    plt.savefig(f"{plots_folder}/train-vs-val-plot-{k}-{graph}-lr({lr}).png", dpi=300)
+    plt.savefig(f"{plots_folder}/train-vs-val-plot-{k}-{graph}-lr({lr})-{w_s}-{w_e}.png", dpi=300)
     plt.close()
 
 
 lrs = [0.001]#[0.01, 0.001, 0.1, 0.05]
 graphs = ['gcn', 'sage', 'gat', 'gat2', 'supgat', 'none']
 Ks = [3,5]
-
+w_s = [0.5, 0.3, 0.5]
+w_e = [1.0, 0.7, 0.5]
 for lr in lrs:
     for k in Ks:
-        dataset = SpeciesDataset(data_root, tile_size, k=k, reload=True)
-        datasets = train_val_test_dataset(dataset)
+        for i in range(w_s):
+            dataset = SpeciesDataset(data_root, tile_size, k=k, reload=True, w_s=w_s[i], w_e=w_e[i])
+            datasets = train_val_test_dataset(dataset)
 
-        dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) for x in ['train','val', 'test']}
+            dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) for x in ['train','val', 'test']}
 
-        print(f"For k = {k}")
-        for g in graphs:
-            print(f"\tFor graph = {g}")
-            plots_folder = f'../SDM_plots_occt/{k}'
-            if not os.path.isdir(plots_folder):
-                os.makedirs(plots_folder)
-            if g != 'none':
-                model = OccupancyDetectionModel(occ_features, detect_features, 1, graph_type=g).float()
-            else:
-                model = OccupancyDetectionModel(occ_features, detect_features, 1).float()
-            model = model.to(device)
-            optimizer = optim.Adam(model.parameters(), lr=lr)
-            plot_file = f"{plots_folder}/{k}-{g}-train-vs-valid-{lr}.csv"
-            if g != 'none':
-                train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file, lr, graph=g, K=k)
-            else:
-                train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file, lr, K=k)
-            df = pd.read_csv(plot_file)
-            plot_loss(n_epoch, df['train'], df['val'], lr, plots_folder, k, g)
-            aucs = test(dataloaders['test'])
+            print(f"For k = {k}")
+            for g in graphs:
+                print(f"\tFor graph = {g}")
+                plots_folder = f'../SDM_plots_occt/{k}'
+                if not os.path.isdir(plots_folder):
+                    os.makedirs(plots_folder)
+                if g != 'none':
+                    model = OccupancyDetectionModel(occ_features, detect_features, 1, graph_type=g).float()
+                else:
+                    model = OccupancyDetectionModel(occ_features, detect_features, 1).float()
+                model = model.to(device)
+                optimizer = optim.Adam(model.parameters(), lr=lr)
+                plot_file = f"{plots_folder}/{k}-{g}-train-vs-valid-{lr}-{w_s}-{w_e}.csv"
+                if g != 'none':
+                    train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file, lr, graph=g, K=k)
+                else:
+                    train(dataloaders['train'], dataloaders['val'], n_epoch, plot_file, lr, K=k)
+                df = pd.read_csv(plot_file)
+                plot_loss(n_epoch, df['train'], df['val'], lr, plots_folder, k, g)
+                aucs = test(dataloaders['test'])
 
-            with open(f"{plots_folder}/{k}-{g}-auc-test-{lr}.json", "w") as outfile:
-                json.dump(aucs, outfile)
+                with open(f"{plots_folder}/{k}-{g}-auc-test-{lr}-{w_s}-{w_e}.json", "w") as outfile:
+                    json.dump(aucs, outfile)
