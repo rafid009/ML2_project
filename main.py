@@ -310,6 +310,7 @@ for lr in lrs:
             dataloaders = {x:DataLoader(datasets[x], batch_size=batch_size, shuffle=True) for x in ['train','val', 'test']}
 
             print(f"For k = {k}")
+            print(f"lr={lr}, k={k}, w_s={w_s[i]}, w_e={w_e[i]}")
             for g in graphs:
                 print(f"\tFor graph = {g}")
                 plots_folder = f'../SDM_plots_occt_w/{k}'
